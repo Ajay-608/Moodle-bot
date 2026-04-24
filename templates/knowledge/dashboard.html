@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Knowledge Dashboard - MoodleBot</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2.5rem; border-radius: 20px; margin-bottom: 2rem; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; margin-bottom: 2.5rem; }
+        .stat-card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-number { font-size: 3rem; font-weight: bold; background: linear-gradient(45deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+        .btn { display: inline-block; padding: 14px 28px; background: linear-gradient(45deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.3s; margin: 0.5rem; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102,126,234,0.3); }
+        .doc-item { padding: 1.5rem; border-left: 5px solid #667eea; background: #f8f9ff; margin-bottom: 1rem; border-radius: 8px; }
+        .back-link { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 20px; border-radius: 25px; text-decoration: none; color: #333; font-weight: 600; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">🏠 Home</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>📚 Knowledge Dashboard</h1>
+            <p>CS401 Database Systems - Course Materials & Resources</p>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 1.5rem; background: #d4edda; color: #155724; border-radius: 10px; margin-bottom: 1.5rem; border-left: 5px solid #28a745;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_docs }}</div>
+                <div>Total Documents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ recent_docs|length }}</div>
+                <div>Recent Docs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">95%</div>
+                <div>RAG Accuracy</div>
+            </div>
+        </div>
+        
+        <div class="cards">
+            <div class="card">
+                <h3>🚀 Quick Actions</h3>
+                <a href="{% url 'knowledge:upload' %}" class="btn">📤 Upload Document</a>
+                <a href="{% url 'knowledge:documents' %}" class="btn">📋 All Documents</a>
+                <a href="{% url 'knowledge:faq' %}" class="btn">❓ FAQ</a>
+                <a href="/chat/" class="btn">💬 AI Chatbot</a>
+            </div>
+            
+            <div class="card">
+                <h3>📄 Recent Documents</h3>
+                {% for doc in recent_docs %}
+                    <div class="doc-item">
+                        <strong>{{ doc.title }}</strong>
+                        <p>{{ doc.content|truncatewords:15 }}</p>
+                        <small>Course ID: {{ doc.course_id }} | Chunk: {{ doc.chunk_id|default:0 }}</small>
+                    </div>
+                {% empty %}
+                    <div class="doc-item" style="text-align: center; color: #666;">
+                        <p>No documents yet. <a href="{% url 'knowledge:upload' %}">Upload your first document!</a></p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

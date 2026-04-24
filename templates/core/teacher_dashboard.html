@@ -1,0 +1,236 @@
+{% extends 'core/base.html' %}
+{% block title %}👨‍🏫 Teacher Dashboard - MoodleBot{% endblock %}
+{% block content %}
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-chalkboard-user me-2 text-warning"></i>Teacher Analytics Dashboard</h1>
+        <div>
+            <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary btn-sm me-2">
+                <i class="fas fa-home me-1"></i>Home
+            </a>
+            <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-sign-out-alt me-1"></i>Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- Welcome Alert -->
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="fas fa-chart-line me-2"></i>
+        <strong>Classroom Insights:</strong> Monitor student engagement and identify learning gaps to provide targeted support.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-left-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small">Students Active</p>
+                            <h3 class="text-primary">{{ total_students }}</h3>
+                        </div>
+                        <i class="fas fa-users fa-2x text-primary opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-left-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small">Chat Sessions</p>
+                            <h3 class="text-success">{{ total_sessions }}</h3>
+                        </div>
+                        <i class="fas fa-comments fa-2x text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-left-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small">Questions Asked</p>
+                            <h3 class="text-info">{{ total_questions }}</h3>
+                        </div>
+                        <i class="fas fa-question-circle fa-2x text-info opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-left-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small">Accuracy Rate</p>
+                            <h3 class="text-warning">{{ avg_accuracy }}%</h3>
+                        </div>
+                        <i class="fas fa-chart-pie fa-2x text-warning opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Top Questions This Week -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-fire me-2"></i>Top Questions (This Week)</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_messages %}
+                        <div class="list-group list-group-flush">
+                            {% for msg in user_messages %}
+                                <div class="list-group-item px-0 py-3 border-bottom">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <p class="mb-1">{{ msg.content|truncatewords:15 }}</p>
+                                            <small class="text-muted">Asked {{ msg.count }} times</small>
+                                        </div>
+                                        <span class="badge bg-primary">{{ msg.count }}x</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No questions this week.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Low-Rated Responses -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Low-Rated Responses (< 3 stars)</h5>
+                </div>
+                <div class="card-body">
+                    {% if low_rated %}
+                        <div class="list-group list-group-flush">
+                            {% for feedback in low_rated %}
+                                <div class="list-group-item px-0 py-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div class="flex-grow-1">
+                                            <p class="mb-1"><strong>{{ feedback.user.username }}</strong> rated as {{ feedback.get_rating_display }}</p>
+                                            <small class="text-muted">{{ feedback.created_at|date:"M d, Y" }}</small>
+                                            {% if feedback.comment %}
+                                                <p class="small mt-1 text-secondary">💬 {{ feedback.comment }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <span class="badge bg-danger">{{ feedback.rating }}/5</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Excellent! No low-rated responses.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Struggling Students -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-warning me-2"></i>Struggling Students</h5>
+                </div>
+                <div class="card-body">
+                    {% if struggling %}
+                        <div class="list-group list-group-flush">
+                            {% for student in struggling %}
+                                <div class="list-group-item px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ student.user__username }}</h6>
+                                            <small class="text-muted">{{ student.gap_count }} gaps • avg {{ student.avg_attempts|floatformat:1 }} attempts</small>
+                                        </div>
+                                        {% if user.user_type == 'admin' %}
+                                        <a href="/admin-panel/users/" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-arrow-right"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No struggling students detected.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Class Performance Summary -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Engagement Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Student Engagement</small>
+                            <small class="text-primary">{{ total_questions }} questions</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 75%;"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Bot Response Accuracy</small>
+                            <small class="text-success">{{ avg_accuracy }}%</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: {{ avg_accuracy }}%;"></div>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Knowledge Gap Coverage</small>
+                            <small class="text-warning">{{ total_students }} students monitored</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" style="width: 60%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <a href="/knowledge/upload/" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-upload me-1"></i>Upload Course Material
+                    </a>
+                   
+              
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-left-primary { border-left: 4px solid #007bff !important; }
+    .border-left-success { border-left: 4px solid #28a745 !important; }
+    .border-left-info { border-left: 4px solid #17a2b8 !important; }
+    .border-left-warning { border-left: 4px solid #ffc107 !important; }
+</style>
+
+{% endblock %}

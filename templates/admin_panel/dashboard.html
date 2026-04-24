@@ -1,0 +1,106 @@
+{% extends 'core/base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tachometer-alt text-primary me-2"></i>Admin Dashboard</h2>
+    <a href="/" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Home
+    </a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Users</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Chat Sessions</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_chats }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-comments fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Messages</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_messages }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-envelope fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Avg Accuracy</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ avg_accuracy }}%</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <a href="/admin-panel/users/" class="btn btn-outline-primary btn-block mb-2">
+                    <i class="fas fa-users me-2"></i>Manage Users
+                </a>
+                <a href="/admin-panel/metrics/" class="btn btn-outline-info btn-block mb-2">
+                    <i class="fas fa-chart-bar me-2"></i>Performance Metrics
+                </a>
+                <a href="/admin/chat/chatsession/" class="btn btn-outline-success btn-block">
+                    <i class="fas fa-comments me-2"></i>View Chat History
+                </a>
+                <a href="/chat/" class="btn btn-outline-primary btn-block">
+                    <i class="fas fa-robot me-2"></i>Test Chatbot
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.text-gray-800 { color: #5a5c69 !important; }
+.text-gray-300 { color: #858796 !important; }
+.max-w-75 { max-width: 75% !important; }
+</style>
+{% endblock %}

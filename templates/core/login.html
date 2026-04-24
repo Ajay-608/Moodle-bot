@@ -1,0 +1,56 @@
+{% extends 'core/base.html' %}
+{% block title %}Login - MoodleBot AI{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+                <i class="fas fa-robot fa-2x mb-3"></i>
+                <h4 class="mb-0">MoodleBot Login</h4>
+                <p class="mb-0">Intelligent Learning Assistant</p>
+            </div>
+            <div class="card-body p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Username</label>
+                        <input type="text" name="username" class="form-control" placeholder="teacher1" required autofocus>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Password</label>
+                        <input type="password" name="password" class="form-control" placeholder="teacher123" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </button>
+                </form>
+                
+                <div class="text-center">
+                    <small class="text-muted">Demo Accounts:</small><br>
+                    <small class="text-success fw-bold">teacher1 / teacher123 🟠</small><br>
+                    <small class="text-danger fw-bold">admin / admin123 🔴</small>
+                </div>
+                
+                
+                <hr class="my-4">
+                <div class="text-center">
+                    <p class="mb-2"><strong>No account?</strong></p>
+                    <a href="{% url 'core:register' %}" class="btn btn-success w-100">
+                        <i class="fas fa-user-plus me-2"></i>Create Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

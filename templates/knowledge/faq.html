@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FAQ - MoodleBot</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2.5rem; border-radius: 20px; text-align: center; margin-bottom: 2rem; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        .faq-item { background: white; margin-bottom: 1.5rem; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        .faq-question { background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%); padding: 1.5rem 2rem; cursor: pointer; font-weight: 600; font-size: 1.2rem; color: #333; border-bottom: 1px solid #e1e5e9; transition: all 0.3s; }
+        .faq-question:hover { background: linear-gradient(135deg, #e8ecff 0%, #d4dcff 100%); }
+        .faq-answer { padding: 0; max-height: 0; overflow: hidden; transition: all 0.3s ease; }
+        .faq-answer.active { padding: 2rem; max-height: 500px; background: #fafbff; }
+        .btn { padding: 12px 24px; background: linear-gradient(45deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 1rem 0.5rem 0 0; }
+        .back-link { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 20px; border-radius: 25px; text-decoration: none; color: #333; font-weight: 600; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <a href="{% url 'knowledge:dashboard' %}" class="back-link">📚 Dashboard</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>❓ Frequently Asked Questions</h1>
+            <p>CS401 Database Systems - Common Questions</p>
+        </div>
+        
+        <div class="faq-list">
+            {% for faq in faqs %}
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        Q: {{ faq.q }}
+                    </div>
+                    <div class="faq-answer">
+                        <p><strong>A:</strong> {{ faq.a }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div style="text-align: center; margin-top: 3rem;">
+            <a href="/chat/" class="btn">💬 Ask AI Chatbot</a>
+            <a href="{% url 'knowledge:dashboard' %}" class="btn" style="background: linear-gradient(45deg, #6c757d, #495057);">📚 Back to Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        function toggleFAQ(element) {
+            const answer = element.nextElementSibling;
+            const isActive = answer.classList.contains('active');
+            
+            // Close all others
+            document.querySelectorAll('.faq-answer').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Toggle current
+            if (!isActive) {
+                answer.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>

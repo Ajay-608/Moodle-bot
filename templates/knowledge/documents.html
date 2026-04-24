@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Documents - MoodleBot</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 15px; text-align: center; margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .btn { padding: 12px 24px; background: linear-gradient(45deg, #28a745, #20c997); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s; display: inline-block; margin-right: 1rem; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(40,167,69,0.3); }
+        .docs-grid { display: grid; gap: 1.5rem; }
+        .doc-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); border-left: 5px solid #667eea; }
+        .doc-title { font-size: 1.4rem; font-weight: bold; color: #333; margin-bottom: 0.5rem; }
+        .doc-preview { color: #666; line-height: 1.6; margin-bottom: 1rem; }
+        .doc-meta { display: flex; gap: 1rem; font-size: 0.9rem; color: #888; }
+        .empty-state { text-align: center; padding: 3rem; color: #666; }
+        .back-link { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 20px; border-radius: 25px; text-decoration: none; color: #333; font-weight: 600; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <a href="{% url 'knowledge:dashboard' %}" class="back-link">📚 Dashboard</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>📋 All Documents</h1>
+            <p>CS401 Database Systems Knowledge Base</p>
+            <a href="{% url 'knowledge:upload' %}" class="btn">📤 New Document</a>
+        </div>
+        
+        <div class="docs-grid">
+            {% for doc in documents %}
+                <div class="doc-card">
+                    <div class="doc-title">{{ doc.title }}</div>
+                    <div class="doc-preview">{{ doc.content|truncatewords:25 }}</div>
+                    <div class="doc-meta">
+                        <span>📅 {{ doc.created_at|date:"M d, Y" }}</span>
+                        <span>🎓 Course {{ doc.course_id }}</span>
+                        <span>📄 Chunk {{ doc.chunk_id|default:0 }}</span>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-state">
+                    <h3>📭 No Documents Yet</h3>
+                    <p>Your knowledge base is empty. Start by uploading your first document!</p>
+                    <a href="{% url 'knowledge:upload' %}" class="btn" style="background: linear-gradient(45deg, #667eea, #764ba2);">🚀 Upload First Document</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

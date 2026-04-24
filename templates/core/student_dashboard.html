@@ -1,0 +1,161 @@
+{% extends 'core/base.html' %}
+{% block title %}📚 My Learning Dashboard - MoodleBot{% endblock %}
+{% block content %}
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-book me-2 text-primary"></i>My Learning Dashboard</h1>
+        <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="btn btn-outline-danger btn-sm">
+            <i class="fas fa-sign-out-alt me-1"></i>Logout
+        </a>
+    </div>
+
+    <!-- Welcome Card -->
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-star me-2"></i>
+        <strong>Welcome, {{ user.username }}!</strong> Your learning progress is being tracked.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-left-primary">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ my_sessions|length }}</h3>
+                    <p class="text-muted mb-0">Active Chats</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-left-success">
+                <div class="card-body text-center">
+                    <h3 class="text-success">{{ my_messages }}</h3>
+                    <p class="text-muted mb-0">Total Questions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-left-info">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ avg_confidence }}%</h3>
+                    <p class="text-muted mb-0">Bot Accuracy</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-left-warning">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ learning_gaps|length }}</h3>
+                    <p class="text-muted mb-0">Knowledge Gaps</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- My Chat Sessions -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Recent Chat Sessions</h5>
+                </div>
+                <div class="card-body">
+                    {% if my_sessions %}
+                        <div class="list-group list-group-flush">
+                            {% for session in my_sessions %}
+                                <a href="/chat/" class="list-group-item list-group-item-action p-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="mb-1">{{ session.title }}</h6>
+                                            <small class="text-muted">{{ session.messages.count }} messages</small>
+                                        </div>
+                                        <small class="text-muted">{{ session.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                        <a href="/chat/" class="btn btn-primary mt-3 w-100">
+                            <i class="fas fa-plus me-1"></i>Start New Chat
+                        </a>
+                    {% else %}
+                        <p class="text-muted">No chat sessions yet. <a href="/chat/">Start one now!</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- My Feedback -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-thumbs-up me-2"></i>My Feedback Activity</h5>
+                </div>
+                <div class="card-body">
+                    <p class="display-6 text-info">{{ my_feedback }}</p>
+                    <p class="text-muted">Responses you've rated so far</p>
+                    <p class="small">Your feedback helps improve MoodleBot! 💡</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Learning Gaps & Areas to Improve -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Areas to Improve</h5>
+                </div>
+                <div class="card-body">
+                    {% if learning_gaps %}
+                        <div class="list-group list-group-flush">
+                            {% for gap in learning_gaps %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ gap.get_topic_display }}</h6>
+                                            <small class="text-muted">{{ gap.incorrect_attempts }} attempts</small>
+                                        </div>
+                                        <span class="badge bg-warning text-dark">Need Help</span>
+                                    </div>
+                                    {% if gap.suggested_resources %}
+                                        <small class="text-muted d-block mt-2">{{ gap.suggested_resources }}</small>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Great job! No knowledge gaps detected.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-link me-2"></i>Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <a href="/chat/" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-comments me-1"></i>Chat with MoodleBot
+                    </a>
+                    <a href="{% url 'core:faq_list' %}" class="btn btn-info w-100 mb-2">
+                        <i class="fas fa-question-circle me-1"></i>FAQ
+                    </a>
+                    <a href="{% url 'core:profile' %}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-user me-1"></i>My Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-left-primary { border-left: 4px solid #007bff !important; }
+    .border-left-success { border-left: 4px solid #28a745 !important; }
+    .border-left-info { border-left: 4px solid #17a2b8 !important; }
+    .border-left-warning { border-left: 4px solid #ffc107 !important; }
+</style>
+
+{% endblock %}

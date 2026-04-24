@@ -1,0 +1,125 @@
+{% extends 'core/base.html' %}
+{% block title %}Chat History - MoodleBot{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <!-- Header -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2><i class="fas fa-comments me-2 text-primary"></i>Chat History</h2>
+                        <p class="text-muted">
+                            <span class="badge bg-primary">{{ total_sessions }} Sessions</span>
+                            <span class="badge bg-info">{{ total_messages }} Messages</span>
+                        </p>
+                    </div>
+                    <a href="{% url 'chat:chat' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus me-2"></i>Start New Chat
+                    </a>
+                </div>
+            </div>
+
+            {% if sessions %}
+                <!-- Sessions Grid -->
+                <div class="row">
+                    {% for session in sessions %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <a href="{% url 'chat:session_detail' session.id %}" class="text-decoration-none">
+                                <div class="card h-100 shadow-sm border-0 hover-card" style="cursor: pointer; transition: all 0.3s;">
+                                    <div class="card-body">
+                                        <!-- Title -->
+                                        <h5 class="card-title text-dark mb-3">
+                                            <i class="fas fa-comment-dots text-primary me-2"></i>
+                                            {{ session.title|truncatewords:5 }}
+                                        </h5>
+
+                                        <!-- Session Stats -->
+                                        <div class="row text-center mb-3">
+                                            <div class="col-4">
+                                                <div class="h6 text-primary">{{ session.messages.count }}</div>
+                                                <small class="text-muted">Messages</small>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="h6 text-success">88%</div>
+                                                <small class="text-muted">Accuracy</small>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="h6 text-info">-</div>
+                                                <small class="text-muted">Duration</small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Last Message Preview -->
+                                        {% with last_message=session.messages.last %}
+                                            {% if last_message %}
+                                                <div class="alert alert-light mb-3" style="border-left: 3px solid {% if last_message.message_type == 'user' %}#0dcaf0{% else %}#667eea{% endif %};">
+                                                    <small>
+                                                        <strong>{% if last_message.message_type == 'user' %}You{% else %}Bot{% endif %}:</strong>
+                                                        {{ last_message.content|truncatewords:10 }}
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+
+                                        <!-- Timestamp -->
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>
+                                                {{ session.created_at|date:"M d, H:i" }}
+                                            </small>
+                                            <span class="badge bg-info">{{ session.messages|dictsort:"message_type"|length }} Q</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-light border-0">
+                                        <small class="text-muted">Click to view details →</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+
+            {% else %}
+                <!-- Empty State -->
+                <div class="card border-0 shadow-lg">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-primary mb-3" style="opacity: 0.3;"></i>
+                        <h4 class="text-muted mb-2">No Chat Sessions Yet</h4>
+                        <p class="text-muted mb-4">Start chatting with MoodleBot AI about Database Systems!</p>
+                        <a href="{% url 'chat:chat' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-comments me-2"></i>Start Chat Now
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transform: translateY(0);
+        transition: all 0.3s ease;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    }
+
+    .card-title {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .text-decoration-none {
+        text-decoration: none !important;
+    }
+
+    .text-decoration-none:hover .card {
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}

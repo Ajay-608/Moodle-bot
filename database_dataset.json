@@ -1,0 +1,1264 @@
+{
+  "database_topics": [
+    {
+      "id": 1,
+      "category": "SQL Basics",
+      "question": "What is SQL and what does it stand for?",
+      "answer": "SQL stands for Structured Query Language. It is a standardized language used to interact with relational databases. SQL allows you to create, read, update, and delete data from database tables. It's the most widely used query language in the world and works with most popular database management systems like MySQL, PostgreSQL, SQL Server, and Oracle.",
+      "keywords": ["sql", "structured", "query", "language", "basics"],
+      "difficulty": "beginner",
+      "examples": ["SELECT * FROM students", "INSERT INTO courses VALUES (...)", "UPDATE users SET age=25 WHERE id=1"]
+    },
+    {
+      "id": 2,
+      "category": "SQL Basics",
+      "question": "What are the main SQL commands?",
+      "answer": "The main SQL commands are: SELECT (retrieve data), INSERT (add new data), UPDATE (modify existing data), DELETE (remove data), CREATE (create tables/databases), ALTER (modify tables), and DROP (delete tables/databases). These are divided into DDL (Data Definition Language) and DML (Data Manipulation Language) commands. DDL includes CREATE, ALTER, DROP. DML includes SELECT, INSERT, UPDATE, DELETE.",
+      "keywords": ["sql", "commands", "select", "insert", "update", "delete", "create", "alter", "drop"],
+      "difficulty": "beginner",
+      "examples": ["SELECT name FROM students", "INSERT INTO courses VALUES (1,'Database')", "DELETE FROM users WHERE id=5"]
+    },
+    {
+      "id": 3,
+      "category": "SELECT Statements",
+      "question": "What does the SELECT statement do and what is its basic syntax?",
+      "answer": "The SELECT statement is used to retrieve data from one or more database tables. Basic syntax: SELECT column1, column2, ... FROM table_name WHERE condition. You can select specific columns or use * to select all columns. The WHERE clause filters results based on conditions. Common clauses include ORDER BY (for sorting), LIMIT (to limit results), and GROUP BY (to group results). Example: SELECT name, age FROM students WHERE age > 18 ORDER BY name LIMIT 10",
+      "keywords": ["select", "statement", "retrieve", "from", "where", "order by", "limit"],
+      "difficulty": "beginner",
+      "examples": ["SELECT * FROM students", "SELECT name, email FROM users WHERE city='NYC'", "SELECT * FROM courses ORDER BY name LIMIT 5"]
+    },
+    {
+      "id": 4,
+      "category": "INSERT Statements",
+      "question": "How do I insert data into a table using SQL?",
+      "answer": "To insert data into a table, use the INSERT statement with syntax: INSERT INTO table_name (column1, column2, ...) VALUES (value1, value2, ...). You must provide values for all required columns, but can omit columns with DEFAULT values or NULL acceptance. You can insert multiple rows at once: INSERT INTO students (name, email) VALUES ('John', 'john@email.com'), ('Jane', 'jane@email.com'). Always ensure data types match the column definitions.",
+      "keywords": ["insert", "into", "values", "add data", "new record"],
+      "difficulty": "beginner",
+      "examples": ["INSERT INTO students (name, age) VALUES ('Alice', 20)", "INSERT INTO courses VALUES (1, 'Database', 'CS401')", "INSERT INTO users (email, phone) VALUES ('a@b.com', '555-1234')"]
+    },
+    {
+      "id": 5,
+      "category": "UPDATE Statements",
+      "question": "How do I update existing data in a table?",
+      "answer": "Use the UPDATE statement with syntax: UPDATE table_name SET column1=value1, column2=value2, ... WHERE condition. The WHERE clause is critical - without it, ALL rows will be updated! Always test your WHERE clause first with a SELECT to ensure you're targeting the correct rows. Example: UPDATE students SET age=21 WHERE id=5. You can update multiple columns at once and use expressions in SET clause like SET salary=salary*1.1 for a 10% raise.",
+      "keywords": ["update", "set", "modify", "change", "where"],
+      "difficulty": "beginner",
+      "examples": ["UPDATE students SET age=21 WHERE id=1", "UPDATE users SET active=1 WHERE email LIKE '%@company.com'", "UPDATE employees SET salary=salary*1.05 WHERE department='Sales'"]
+    },
+    {
+      "id": 6,
+      "category": "DELETE Statements",
+      "question": "How do I delete data from a table?",
+      "answer": "Use the DELETE statement with syntax: DELETE FROM table_name WHERE condition. Like UPDATE, always include a WHERE clause to specify which rows to delete. Without WHERE, ALL rows will be deleted! Test your WHERE clause first with SELECT. Example: DELETE FROM students WHERE id=5. You can delete multiple rows: DELETE FROM users WHERE last_login < '2020-01-01'. Unlike DROP (which removes the table structure), DELETE only removes rows but keeps the table structure intact.",
+      "keywords": ["delete", "remove", "where", "rows", "data"],
+      "difficulty": "beginner",
+      "examples": ["DELETE FROM students WHERE id=1", "DELETE FROM users WHERE active=0", "DELETE FROM logs WHERE created_date < '2023-01-01'"]
+    },
+    {
+      "id": 7,
+      "category": "JOINs",
+      "question": "What is a JOIN and what types of JOINs exist?",
+      "answer": "A JOIN combines rows from two or more tables based on related columns (usually primary and foreign keys). Types: INNER JOIN (returns only matching rows from both tables), LEFT JOIN (returns all rows from left table + matches from right), RIGHT JOIN (all rows from right + matches from left), FULL OUTER JOIN (all rows from both tables), CROSS JOIN (Cartesian product), SELF JOIN (join table with itself). JOINs are essential for querying data across related tables in relational databases.",
+      "keywords": ["join", "inner", "left", "right", "outer", "tables", "combine", "relate"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT s.name, c.title FROM students s INNER JOIN courses c ON s.course_id=c.id", "SELECT * FROM users LEFT JOIN orders ON users.id=orders.user_id", "SELECT e.name, d.name FROM employees e RIGHT JOIN departments d ON e.dept_id=d.id"]
+    },
+    {
+      "id": 8,
+      "category": "JOINs",
+      "question": "Can you explain INNER JOIN with an example?",
+      "answer": "INNER JOIN returns only rows that have matching values in both tables. Syntax: SELECT columns FROM table1 INNER JOIN table2 ON table1.key = table2.key. Example: Joining students and courses: SELECT students.name, courses.title FROM students INNER JOIN courses ON students.course_id = courses.id. This returns only students who are enrolled in a course. If a student has no course_id or the course_id doesn't exist, that student won't appear in the result. INNER JOIN is the most common type used when you need related data from multiple tables.",
+      "keywords": ["inner", "join", "matching", "both tables", "on condition"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT s.name, c.title FROM students s INNER JOIN courses c ON s.course_id=c.id", "SELECT o.id, c.name FROM orders o INNER JOIN customers c ON o.customer_id=c.id WHERE o.total>100"]
+    },
+    {
+      "id": 9,
+      "category": "JOINs",
+      "question": "What is the difference between LEFT JOIN and RIGHT JOIN?",
+      "answer": "LEFT JOIN returns ALL rows from the left table plus matching rows from the right table. If there's no match in the right table, NULL values are returned. RIGHT JOIN is the opposite - returns ALL rows from the right table plus matching rows from the left. Example: LEFT JOIN students and courses returns all students even if they're not enrolled. RIGHT JOIN students and courses returns all courses even if no students are enrolled. In practice, LEFT JOIN is used more frequently. The difference is just which table's data you want to completely preserve.",
+      "keywords": ["left", "right", "join", "all rows", "null", "unmatched"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT s.name, c.title FROM students s LEFT JOIN courses c ON s.course_id=c.id", "SELECT c.id, s.name FROM courses c RIGHT JOIN students s ON c.id=s.course_id"]
+    },
+    {
+      "id": 10,
+      "category": "WHERE Clause",
+      "question": "What is the WHERE clause and how do I use it?",
+      "answer": "The WHERE clause filters rows based on specified conditions. Syntax: WHERE condition. Conditions can use comparison operators (=, !=, <, >, <=, >=), logical operators (AND, OR, NOT), and special operators (IN, BETWEEN, LIKE, IS NULL). Examples: WHERE age > 18, WHERE city='NYC' AND age<30, WHERE salary BETWEEN 50000 AND 80000, WHERE name LIKE 'J%', WHERE email IS NOT NULL. The WHERE clause is used in SELECT, UPDATE, and DELETE statements. Multiple conditions can be combined using AND/OR. Always test WHERE clauses carefully to avoid unintended results.",
+      "keywords": ["where", "filter", "condition", "select", "update", "delete"],
+      "difficulty": "beginner",
+      "examples": ["SELECT * FROM students WHERE age > 18", "SELECT * FROM users WHERE city='NYC' AND active=1", "SELECT * FROM employees WHERE salary BETWEEN 50000 AND 100000"]
+    },
+    {
+      "id": 11,
+      "category": "Aggregate Functions",
+      "question": "What are SQL aggregate functions and common examples?",
+      "answer": "Aggregate functions perform calculations on a set of values and return a single result. Common functions: COUNT (counts rows), SUM (adds values), AVG (calculates average), MIN (finds minimum), MAX (finds maximum), GROUP_CONCAT (concatenates values). Used typically with GROUP BY clause. Examples: SELECT COUNT(*) FROM students, SELECT AVG(salary) FROM employees, SELECT MAX(price) FROM products. Aggregate functions ignore NULL values (except COUNT(*) which counts rows). When using GROUP BY, you can use multiple aggregate functions in one query to get comprehensive statistics on grouped data.",
+      "keywords": ["aggregate", "count", "sum", "avg", "min", "max", "function", "calculate"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT COUNT(*) FROM students", "SELECT AVG(salary) FROM employees", "SELECT MAX(price), MIN(price) FROM products"]
+    },
+    {
+      "id": 12,
+      "category": "GROUP BY",
+      "question": "What is GROUP BY and how is it used?",
+      "answer": "GROUP BY groups rows that have the same values in specified columns and collapses them into summary rows. Used with aggregate functions to get statistics for each group. Syntax: SELECT column, AGGREGATE_FUNCTION(column) FROM table GROUP BY column. Example: SELECT course_id, COUNT(*) FROM students GROUP BY course_id shows how many students are in each course. You can group by multiple columns: GROUP BY department, position. HAVING clause filters groups like WHERE filters rows: SELECT department, AVG(salary) FROM employees GROUP BY department HAVING AVG(salary) > 50000 shows departments with average salary above 50k.",
+      "keywords": ["group by", "aggregate", "summary", "group", "having"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT course_id, COUNT(*) FROM students GROUP BY course_id", "SELECT department, AVG(salary) FROM employees GROUP BY department", "SELECT category, SUM(sales) FROM orders GROUP BY category HAVING SUM(sales)>1000"]
+    },
+    {
+      "id": 13,
+      "category": "ORDER BY",
+      "question": "How do I sort results using ORDER BY?",
+      "answer": "ORDER BY sorts the result set by specified columns. Syntax: SELECT columns FROM table ORDER BY column [ASC|DESC]. ASC is ascending (default), DESC is descending. You can sort by multiple columns: ORDER BY last_name ASC, first_name ASC. Example: SELECT * FROM students ORDER BY age DESC shows students sorted by age (oldest first). You can sort by columns not in SELECT list. You can use column aliases: SELECT name AS full_name FROM users ORDER BY full_name. ORDER BY is typically the last clause in a SELECT statement. Performance tip: ensure sorted columns are indexed for better query performance.",
+      "keywords": ["order by", "sort", "asc", "desc", "ascending", "descending"],
+      "difficulty": "beginner",
+      "examples": ["SELECT * FROM students ORDER BY age DESC", "SELECT name, salary FROM employees ORDER BY salary ASC LIMIT 10", "SELECT * FROM products ORDER BY category, price DESC"]
+    },
+    {
+      "id": 14,
+      "category": "DISTINCT",
+      "question": "What does DISTINCT do in SQL?",
+      "answer": "DISTINCT removes duplicate rows from the result set. Syntax: SELECT DISTINCT column1, column2, ... FROM table. Useful for finding unique values. Example: SELECT DISTINCT city FROM customers shows all unique cities where customers are located. You can use DISTINCT with multiple columns: SELECT DISTINCT country, city FROM customers returns unique country-city combinations. DISTINCT can impact performance on large datasets since the database must compare all values. NULL values are treated as a distinct value. DISTINCT is applied to the entire SELECT list, not to individual columns.",
+      "keywords": ["distinct", "unique", "duplicate", "remove", "values"],
+      "difficulty": "beginner",
+      "examples": ["SELECT DISTINCT city FROM students", "SELECT DISTINCT category FROM products", "SELECT DISTINCT country, city FROM customers"]
+    },
+    {
+      "id": 15,
+      "category": "LIMIT",
+      "question": "What is LIMIT and how do I use it?",
+      "answer": "LIMIT restricts the number of rows returned by a query. Syntax: SELECT columns FROM table LIMIT number or LIMIT number OFFSET number. LIMIT 10 returns only first 10 rows. LIMIT 10 OFFSET 5 skips first 5 rows and returns next 10 (useful for pagination). Example: SELECT * FROM users LIMIT 50 gets first 50 users. Used in pagination: LIMIT 10 OFFSET (page-1)*10. LIMIT is applied last (after ORDER BY). Different databases may use different syntax (MySQL uses LIMIT, SQL Server uses TOP, etc.). Combining with ORDER BY: SELECT * FROM products ORDER BY price DESC LIMIT 5 gets top 5 most expensive products.",
+      "keywords": ["limit", "offset", "pagination", "rows", "restrict"],
+      "difficulty": "beginner",
+      "examples": ["SELECT * FROM students LIMIT 10", "SELECT * FROM users LIMIT 20 OFFSET 40", "SELECT * FROM products ORDER BY price DESC LIMIT 5"]
+    },
+    {
+      "id": 16,
+      "category": "Normalization",
+      "question": "What is database normalization and why is it important?",
+      "answer": "Normalization is a process of organizing database structure to reduce redundancy and improve data integrity. It involves dividing tables into smaller tables and defining relationships between them. Benefits: eliminates duplicate data, improves data consistency, reduces storage space, makes updates easier, prevents update/delete anomalies. The normal forms progress: 1NF (Atomic values), 2NF (Remove partial dependencies), 3NF (Remove transitive dependencies), BCNF, 4NF, 5NF. Most databases are normalized to 3NF. Trade-off: normalized databases require more JOINs for queries. Denormalization is sometimes used intentionally for performance gains in data warehouses.",
+      "keywords": ["normalization", "redundancy", "data", "integrity", "normal", "forms"],
+      "difficulty": "intermediate",
+      "examples": ["First Normal Form: Eliminate repeating groups", "Second Normal Form: Remove partial dependencies", "Third Normal Form: Remove transitive dependencies"]
+    },
+    {
+      "id": 17,
+      "category": "Normalization",
+      "question": "What is First Normal Form (1NF)?",
+      "answer": "First Normal Form (1NF) is the foundational level of normalization. Requirements: (1) All columns must contain atomic (indivisible) values - no repeating groups or arrays, (2) Each row must be unique (have a primary key), (3) No duplicate columns. Example of violation: A student table with a 'courses' column containing multiple course codes ('SQL,Python,Java'). Fix: Create separate columns or better - separate courses into a different table. In 1NF: Each cell contains a single value. Violation: Table with columns for Phone1, Phone2, Phone3. Fix: Create a separate phone_numbers table with foreign key to students.",
+      "keywords": ["1nf", "first", "normal", "form", "atomic", "repeating", "groups"],
+      "difficulty": "intermediate",
+      "examples": ["Before: Student(name, phone_numbers) - phone_numbers contains '555-1111, 555-2222'", "After 1NF: Separate StudentPhones table with student_id, phone_number", "1NF requires atomic values in each cell"]
+    },
+    {
+      "id": 18,
+      "category": "Normalization",
+      "question": "What is Second Normal Form (2NF)?",
+      "answer": "Second Normal Form (2NF) builds on 1NF and requires: (1) Table must be in 1NF, (2) Every non-key column must depend on the ENTIRE primary key (no partial dependencies). 2NF is specifically about removing partial dependencies in composite keys. Example violation: StudentCourse table with primary key (student_id, course_id) where a 'professor_name' column depends only on course_id (not on the full key). Fix: Create separate Courses table with course_id and professor_name. In practice, 2NF is often automatically satisfied if you use single-column primary keys. Partial dependency occurs when a non-key attribute depends on only part of a composite primary key.",
+      "keywords": ["2nf", "second", "normal", "form", "partial", "dependency", "key"],
+      "difficulty": "intermediate",
+      "examples": ["Before: StudentCourse(student_id, course_id, professor_name) - professor depends only on course_id", "After 2NF: Separate Courses table", "Partial dependency removed by properly organizing data"]
+    },
+    {
+      "id": 19,
+      "category": "Normalization",
+      "question": "What is Third Normal Form (3NF)?",
+      "answer": "Third Normal Form (3NF) builds on 2NF and requires: (1) Table must be in 2NF, (2) No transitive dependencies - non-key columns must not depend on other non-key columns. Example violation: Student table with columns (student_id, name, city, state, zip) where 'state' is derived from 'zip' (transitive dependency through zip). Fix: Create separate Cities table. Another example: Order table with (order_id, customer_id, customer_name, customer_email). Fix: customer_name and customer_email should be in separate Customers table. 3NF ensures each fact is stored in only one place. Most real-world databases are normalized to 3NF as it balances between redundancy elimination and query performance.",
+      "keywords": ["3nf", "third", "normal", "form", "transitive", "dependency"],
+      "difficulty": "intermediate",
+      "examples": ["Before: Address(zip, city, state) - state depends on zip", "After 3NF: Separate tables for zip-city relationship", "Remove transitive dependencies by organizing related data"]
+    },
+    {
+      "id": 20,
+      "category": "Keys",
+      "question": "What are primary keys and why are they important?",
+      "answer": "A primary key is a column (or combination of columns) that uniquely identifies each row in a table. Required properties: (1) UNIQUE - no two rows have the same value, (2) NOT NULL - every row must have a value, (3) Unchanging - should not change over time. Each table should have exactly one primary key. Benefits: Ensures data integrity, enables fast lookups, prevents duplicate records, allows relationships between tables via foreign keys. Common types: Natural keys (existing attribute like email), Surrogate keys (artificial like auto-increment ID). Example: student_id as primary key means each student has a unique ID. Composite primary key: combination of multiple columns (student_id, course_id) uniquely identify enrollment records.",
+      "keywords": ["primary", "key", "unique", "not null", "identifier", "table"],
+      "difficulty": "intermediate",
+      "examples": ["PRIMARY KEY (student_id)", "PRIMARY KEY (student_id, course_id)", "student_id INT PRIMARY KEY AUTO_INCREMENT"]
+    },
+    {
+      "id": 21,
+      "category": "Keys",
+      "question": "What are foreign keys and how are they used?",
+      "answer": "A foreign key is a column (or combination of columns) that references the primary key of another table, creating relationships between tables. Purpose: Maintains referential integrity - ensures that values in the foreign key column exist as primary keys in the referenced table. Syntax: FOREIGN KEY (column) REFERENCES other_table(primary_key_column). Example: Students table has course_id column with FOREIGN KEY REFERENCES Courses(id). Benefits: Prevents orphan records, enforces data consistency, enables JOINs to retrieve related data. CASCADE operations: ON DELETE CASCADE removes child records when parent is deleted. Foreign keys can reference the same table (self-referencing) for hierarchical data. Multiple foreign keys can exist in one table linking to different tables.",
+      "keywords": ["foreign", "key", "reference", "relationship", "referential", "integrity"],
+      "difficulty": "intermediate",
+      "examples": ["FOREIGN KEY (student_id) REFERENCES students(id)", "FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE", "dept_id INT FOREIGN KEY REFERENCES departments(id)"]
+    },
+    {
+      "id": 22,
+      "category": "Keys",
+      "question": "What are unique keys and how do they differ from primary keys?",
+      "answer": "A unique key ensures that all values in a column (or combination of columns) are unique - no duplicates allowed, BUT unlike primary keys, unique keys CAN contain NULL values (multiple NULLs are allowed). A table can have one primary key but multiple unique keys. Example: email column with UNIQUE constraint - each user has different email, but you can have multiple NULL emails. Uses: enforcing uniqueness on non-primary attributes (email, username, employee_number). Differences: Primary key is NOT NULL + UNIQUE, one per table, identifies row uniquely. Unique key allows NULL, multiple per table, ensures no duplicates. Performance: Both are indexed for fast lookups, but primary key is typically the main lookup column.",
+      "keywords": ["unique", "key", "constraint", "distinct", "duplicate"],
+      "difficulty": "intermediate",
+      "examples": ["email VARCHAR(100) UNIQUE", "UNIQUE (username, domain)", "CONSTRAINT UK_email UNIQUE (email)"]
+    },
+    {
+      "id": 23,
+      "category": "Indexes",
+      "question": "What are database indexes and why are they important?",
+      "answer": "An index is a database structure that improves the speed of data retrieval operations. Like a book index, it creates a sorted lookup structure pointing to actual data. Types: Primary Key Index (automatic), Unique Index (UNIQUE constraint), Full-text Index (text search), Composite Index (multiple columns). Benefits: Faster SELECT queries, faster WHERE filtering, speeds up JOINs and ORDER BY, improves database performance significantly. Drawbacks: Slower INSERT/UPDATE/DELETE (must maintain index), uses extra disk space. When to index: frequently searched columns, columns used in WHERE clause, JOIN conditions, foreign keys. Don't overindex - typically index 5-10% of columns. Trade-off between read and write performance. SELECT queries can be 100-1000x faster with proper indexing.",
+      "keywords": ["index", "performance", "faster", "lookup", "optimization", "speed"],
+      "difficulty": "intermediate",
+      "examples": ["CREATE INDEX idx_email ON users(email)", "CREATE UNIQUE INDEX idx_username ON accounts(username)", "CREATE INDEX idx_user_course ON enrollments(student_id, course_id)"]
+    },
+    {
+      "id": 24,
+      "category": "Transactions",
+      "question": "What are database transactions and why are they important?",
+      "answer": "A transaction is a sequence of database operations (queries) that are treated as a single atomic unit - either ALL succeed or ALL fail (rollback). Properties (ACID): Atomicity (all-or-nothing), Consistency (valid state), Isolation (independent),urability (persisted). Example: Money transfer from account A to B must debit A AND credit B - if one fails, both should be undone. Without transactions, a crash between operations could corrupt data. Syntax: BEGIN TRANSACTION, commit changes, COMMIT to save or ROLLBACK to undo. Usefulness: prevents data corruption, handles errors gracefully, enables atomic multi-step operations. Isolation levels: Read Uncommitted, Read Committed, Repeatable Read, Serializable - balance between data consistency and performance. Critical for financial systems, e-commerce, and any multi-step business logic.",
+      "keywords": ["transaction", "acid", "commit", "rollback", "atomic", "isolated"],
+      "difficulty": "advanced",
+      "examples": ["BEGIN; UPDATE accounts SET balance=balance-100 WHERE id=1; UPDATE accounts SET balance=balance+100 WHERE id=2; COMMIT;"]
+    },
+    {
+      "id": 25,
+      "category": "Subqueries",
+      "question": "What are subqueries and how are they used?",
+      "answer": "A subquery (inner query) is a query nested inside another query (outer query). Used to break down complex queries into manageable parts. Types: Scalar subquery (returns single value), Row subquery (returns one row), Table subquery (returns multiple rows/columns). Example: SELECT * FROM students WHERE course_id IN (SELECT id FROM courses WHERE teacher_id=5). Uses: filtering based on aggregates, complex WHERE conditions, deriving intermediate results. Correlated subquery: inner query references columns from outer query - slower but powerful. Performance: Subqueries can sometimes be replaced with JOINs for better performance. Subqueries in SELECT, FROM, or WHERE clauses. Important: WHERE ... IN (subquery) and WHERE ... EXISTS (subquery) are common patterns.",
+      "keywords": ["subquery", "inner", "query", "nested", "select", "where", "in"],
+      "difficulty": "advanced",
+      "examples": ["SELECT * FROM students WHERE age > (SELECT AVG(age) FROM students)", "SELECT * FROM orders WHERE customer_id IN (SELECT id FROM customers WHERE city='NYC')", "SELECT name FROM employees WHERE dept_id = (SELECT id FROM departments WHERE name='Sales')"]
+    },
+    {
+      "id": 26,
+      "category": "Views",
+      "question": "What are database views and how are they created?",
+      "answer": "A view is a virtual table created from a SELECT query and stored in the database. It doesn't store actual data but is a saved query. Syntax: CREATE VIEW view_name AS SELECT ... Benefits: Simplifies complex queries (reusable), provides security (restrict column access), presents data in user-friendly format, supports logical data independence. Example: CREATE VIEW student_enrollments AS SELECT s.name, c.title FROM students s JOIN courses c ON s.course_id=c.id. Then SELECT * FROM student_enrollments. Types: Simple views (single table), Complex views (JOINs, aggregates), Materialized views (stores results). Limitations: Performance (computed when queried unless materialized), updating views can be restricted (if they contain JOINs or aggregates). Updating: INSERT/UPDATE/DELETE on simple views are possible after WITH CHECK OPTION.",
+      "keywords": ["view", "virtual", "table", "query", "create", "stored"],
+      "difficulty": "intermediate",
+      "examples": ["CREATE VIEW active_students AS SELECT * FROM students WHERE status='active'", "SELECT * FROM student_enrollments", "DROP VIEW IF EXISTS student_enrollments"]
+    },
+    {
+      "id": 27,
+      "category": "Stored Procedures",
+      "question": "What are stored procedures and how are they used?",
+      "answer": "A stored procedure is a precompiled SQL code saved in the database that can be executed repeatedly. Benefits: Code reusability, improved security (can restrict direct table access), better performance (compiled once), reduces network traffic, supports complex business logic with control flow (IF/ELSE, loops). Syntax: CREATE PROCEDURE procedure_name ... BEGIN SQL statements; END Calling: CALL procedure_name(parameters). Parameters: IN (input), OUT (output), INOUT (both). Example: CREATE PROCEDURE GetStudentsByAge (IN age INT) BEGIN SELECT * FROM students WHERE age > age; END. Use cases: data validation, complex calculations, multiple related operations as atomic unit, encapsulating business logic away from application code.",
+      "keywords": ["procedure", "stored", "create", "call", "parameters", "logic"],
+      "difficulty": "advanced",
+      "examples": ["CALL GetStudentsByAge(20)", "CREATE PROCEDURE UpdateStudentGrade", "DELIMITER // CREATE PROCEDURE get_students() BEGIN SELECT * FROM students; END //"]
+    },
+    {
+      "id": 28,
+      "category": "Triggers",
+      "question": "What are database triggers and how are they used?",
+      "answer": "A trigger is code automatically executed in response to specific events (INSERT, UPDATE, DELETE) on a particular table. Timing: BEFORE (before event) or AFTER (after event). Uses: Enforcing data validation, maintaining audit trails, enforcing complex constraints, cascading updates, preventing invalid transactions. Example: CREATE TRIGGER update_timestamp BEFORE UPDATE ON students FOR EACH ROW SET NEW.updated_at = NOW(). Benefits: Automation (no manual checks), consistency (logic in database), performance (no round-trip to application). Drawbacks: Harder to debug, can slow inserts/updates, hidden business logic. Types: Row-level (fires for each affected row) vs Statement-level (fires once per statement). Careful use needed - recursive triggers can cause issues. Alternatives: Application-level checks for simpler logic.",
+      "keywords": ["trigger", "event", "before", "after", "automatic", "action"],
+      "difficulty": "advanced",
+      "examples": ["CREATE TRIGGER log_deletion AFTER DELETE ON users FOR EACH ROW INSERT INTO audit_log...", "CREATE TRIGGER set_timestamp BEFORE UPDATE ON employees"]
+    },
+    {
+      "id": 29,
+      "category": "SQL Functions",
+      "question": "What are string functions in SQL?",
+      "answer": "String functions manipulate text data. Common functions: UPPER() (convert to uppercase), LOWER() (lowercase), LENGTH() (character count), SUBSTRING() (extract portion), CONCAT() (combine strings), TRIM() (remove spaces), REPLACE() (substitute text), INSTR() (find position). Examples: SELECT UPPER(name) FROM students returns names in uppercase. SELECT SUBSTRING(email, 1, INSTR(email,'@')-1) extracts username from email. SELECT CONCAT(first_name, ' ', last_name) combines names. SELECT TRIM('  hello  ') returns 'hello'. String functions useful for data cleaning, formatting output, data validation. Database-specific: MySQL uses different functions than SQL Server or PostgreSQL. Important for data preprocessing and transformation in queries.",
+      "keywords": ["string", "function", "upper", "lower", "concat", "substring", "trim"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT UPPER(name) FROM students", "SELECT LENGTH(email) FROM users", "SELECT CONCAT(first_name, ' ', last_name) FROM employees"]
+    },
+    {
+      "id": 30,
+      "category": "SQL Functions",
+      "question": "What are date functions in SQL?",
+      "answer": "Date functions manipulate date/time values. Common functions: NOW() (current date/time), DATE() (extract date), YEAR/MONTH/DAY() (extract components), DATE_ADD() (add days/months), DATE_DIFF() (difference between dates), DATE_FORMAT() (format date), DATEDIFF() (days between dates). Examples: SELECT DATE_ADD(NOW(), INTERVAL 7 DAY) adds 7 days. SELECT YEAR(birth_date) FROM students extracts birth year. SELECT DATEDIFF(NOW(), created_at) FROM users calculates days since created. SELECT DATE_FORMAT(NOW(), '%Y-%m-%d') formats as YYYY-mm-dd. Useful for: filtering by date ranges, calculating age, handling expiration dates, time-based statistics. Database differences: MySQL, SQL Server, PostgreSQL have different syntax. Time zones can affect results in multi-region databases.",
+      "keywords": ["date", "function", "now", "year", "month", "day", "datediff"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT NOW()", "SELECT DATE_ADD(NOW(), INTERVAL 1 MONTH)", "SELECT DATEDIFF(day, start_date, end_date) FROM projects"]
+    },
+    {
+      "id": 31,
+      "category": "Advanced SQL",
+      "question": "What is a CASE statement and how do I use it?",
+      "answer": "CASE statement allows conditional logic in SQL queries. Syntax: CASE WHEN condition1 THEN result1 WHEN condition2 THEN result2 ELSE result3 END. Example: SELECT name, CASE WHEN age < 18 THEN 'Minor' WHEN age < 65 THEN 'Adult' ELSE 'Senior' END FROM users. CASE can be used in SELECT, WHERE, ORDER BY clauses. Simple CASE: CASE column WHEN value1 THEN result1 WHEN value2 THEN result2 END. Searched CASE: CASE WHEN condition THEN result END. If no condition matches, ELSE clause executes. NULL in CASE statements is never TRUE - use IS NULL. Useful for data transformation, categorization, and conditional calculations.",
+      "keywords": ["case", "when", "then", "conditional", "logic"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT CASE WHEN age<18 THEN 'Minor' ELSE 'Adult' END", "SELECT name, CASE status WHEN 'A' THEN 'Active' WHEN 'I' THEN 'Inactive' END"]
+    },
+    {
+      "id": 32,
+      "category": "Advanced SQL",
+      "question": "What is a UNION operator and how does it combine result sets?",
+      "answer": "UNION combines result sets from multiple queries. UNION removes duplicate rows, UNION ALL keeps all rows including duplicates. Syntax: SELECT col1 FROM table1 UNION SELECT col1 FROM table2. Rules: same number of columns in all queries, matching data types, column names from first query. Example: SELECT name FROM students UNION SELECT name FROM employees shows unique names from both tables. UNION ALL is faster (no duplicate removal). INTERSECT returns common rows, EXCEPT/MINUS returns rows in first query but not second. ORDER BY applies to entire result set (must be last clause). UNION is slower than JOINs - use JOINs when possible.",
+      "keywords": ["union", "combine", "result", "sets", "duplicate"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT name FROM students UNION SELECT name FROM employees", "SELECT dept FROM current_staff UNION ALL SELECT dept FROM retired_staff"]
+    },
+    {
+      "id": 33,
+      "category": "Advanced SQL",
+      "question": "What are Common Table Expressions (CTEs) and how do I use them?",
+      "answer": "CTEs (WITH clause) create temporary named result sets for use in a query. Syntax: WITH cte_name AS (SELECT ...) SELECT * FROM cte_name. Benefits: improve readability, enable recursion, avoid code duplication, simplify complex logic. Example: WITH ranked_students AS (SELECT name, ROW_NUMBER() OVER(ORDER BY grade DESC) as rank FROM students) SELECT * FROM ranked_students WHERE rank <= 10. Recursive CTE: WITH RECURSIVE numbers AS (SELECT 1 as n UNION ALL SELECT n+1 FROM numbers WHERE n<10) SELECT * FROM numbers generates numbers 1-10. Multiple CTEs: comma-separate them in WITH clause. CTEs are scoped to single query - reusable within that query. Good for hierarchical data, recursion, and query organization.",
+      "keywords": ["cte", "with", "common", "table", "expression", "recursive"],
+      "difficulty": "advanced",
+      "examples": ["WITH high_earners AS (SELECT * FROM employees WHERE salary>100000) SELECT * FROM high_earners WHERE dept='Sales'"]
+    },
+    {
+      "id": 34,
+      "category": "Advanced SQL",
+      "question": "What are window functions and how do they work?",
+      "answer": "Window functions perform calculations across a set of rows related to current row. Syntax: function(column) OVER (PARTITION BY col1 ORDER BY col2). Types: ROW_NUMBER() (unique rank), RANK() (ties get same rank), DENSE_RANK(), LAG()/LEAD() (access previous/next row), SUM/AVG/COUNT (aggregate over window). Example: SELECT salary, RANK() OVER(PARTITION BY department ORDER BY salary DESC) FROM employees ranks employees by salary within department. Frames: ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING defines window range. Moving average: AVG(salary) OVER(ORDER BY hire_date ROWS BETWEEN 11 PRECEDING AND CURRENT ROW). Advantages: window functions avoid subqueries, more efficient than self-joins, clearer code. Works in SELECT clause only.",
+      "keywords": ["window", "function", "row_number", "rank", "partition", "over"],
+      "difficulty": "advanced",
+      "examples": ["SELECT name, salary, ROW_NUMBER() OVER(ORDER BY salary DESC) FROM employees", "SELECT salary, LAG(salary) OVER(ORDER BY salary) as prev_salary FROM salaries"]
+    },
+    {
+      "id": 35,
+      "category": "Advanced SQL",
+      "question": "What are correlated subqueries and when should I use them?",
+      "answer": "Correlated subqueries reference columns from outer query. Inner query executes once per outer row - slower than JOINs. Syntax: SELECT * FROM table1 t1 WHERE column > (SELECT AVG(column) FROM table2 t2 WHERE t2.id = t1.id). Example: SELECT employee_name FROM employees e WHERE salary > (SELECT AVG(salary) FROM employees WHERE department_id = e.department_id) finds employees earning above department average. Use EXISTS for existence checks: SELECT * FROM employees e WHERE EXISTS (SELECT 1 FROM projects WHERE employee_id = e.id). NOT EXISTS checks non-existence. Performance: correlated subqueries are slower - use JOINs or window functions when possible. Good for: existence checks, complex filtering. Bad for: performance-critical queries. Readability often better with subqueries than complex JOINs.",
+      "keywords": ["correlated", "subquery", "exists", "related", "outer"],
+      "difficulty": "advanced",
+      "examples": ["SELECT * FROM orders o WHERE amount > (SELECT AVG(amount) FROM orders WHERE customer_id = o.customer_id)"]
+    },
+    {
+      "id": 36,
+      "category": "Advanced SQL",
+      "question": "What is a self-join and what are practical examples?",
+      "answer": "Self-join joins table to itself using aliases. Syntax: SELECT a.col, b.col FROM table a JOIN table b ON a.id = b.parent_id. Common uses: hierarchical data (employee-manager), finding relationships within same table. Example: SELECT e1.name as employee, e2.name as manager FROM employees e1 JOIN employees e2 ON e1.manager_id = e2.id shows each employee's manager. Org chart: SELECT * FROM employees e1 WHERE e1.manager_id IS NULL finds top-level managers. Finding duplicates: SELECT * FROM users a JOIN users b ON a.email = b.email WHERE a.id < b.id finds duplicate emails. Comparing rows: SELECT a.* FROM products a JOIN products b ON a.category = b.category WHERE a.price > b.price. Requires different table aliases. Types: INNER JOIN (only matches), LEFT JOIN (all from first, matches from second). Many aliases confusing - use CTEs for clarity.",
+      "keywords": ["self", "join", "hierarchical", "relationship", "alias"],
+      "difficulty": "advanced",
+      "examples": ["SELECT e.name, m.name FROM employees e LEFT JOIN employees m ON e.manager_id=m.id"]
+    },
+    {
+      "id": 37,
+      "category": "Advanced SQL",
+      "question": "What is data normalization and why is it important for database design?",
+      "answer": "Normalization eliminates data redundancy and dependency anomalies through structured design. Normal Forms (NF): 1NF (atomic values), 2NF (no partial dependencies), 3NF (no transitive dependencies), BCNF (stricter 3NF), 4NF (no multivalued dependencies). Benefits: reduced storage, improved performance, data consistency, prevents anomalies. Drawbacks: more tables = more JOINs, query complexity, potential slowdown. 1NF cure: eliminate repeating groups into separate tables. 2NF cure: remove partial dependencies in composite keys. 3NF cure: remove transitive dependencies. Example: bad design has Address table with (zip, city, state) where city depends on zip - fix by separating. Most databases normalize to 3NF. Denormalization: intentionally adding redundancy for performance - trade consistency for speed. OLTP normalizes (transactional), OLAP denormalizes (analytical).",
+      "keywords": ["normalization", "redundancy", "dependency", "design", "forms"],
+      "difficulty": "intermediate",
+      "examples": ["1NF: Eliminate repeating groups", "3NF: Remove transitive dependencies"]
+    },
+    {
+      "id": 38,
+      "category": "Query Optimization",
+      "question": "What is query optimization and how do I write efficient queries?",
+      "answer": "Query optimization writes queries that run as fast as possible using minimal resources. Techniques: use SELECT columns (not *), add WHERE clauses early, use indexes on frequently searched columns, avoid functions in WHERE, use JOINs instead of subqueries, LIMIT results, avoid DISTINCT when not needed, use EXPLAIN/ANALYZE to see execution plan. Anti-patterns: SELECT * FROM large_table, missing indexes, implicit type conversion, selecting unused columns, complex OR conditions. Example: SELECT * FROM users WHERE year(created_at) = 2024 can't use index - better: WHERE created_at >= '2024-01-01'. Joins vs subqueries: SELECT * FROM o INNER JOIN customers c ON o.customer_id = c.id WHERE c.city='NYC' is faster. Database statistics: ANALYZE TABLE helps optimizer choose best query plan. Execution plans: show which indexes used, full table scans, join order. Regular monitoring and optimization maintains performance.",
+      "keywords": ["optimization", "efficiency", "index", "execution", "plan"],
+      "difficulty": "intermediate",
+      "examples": ["Use indexes on WHERE columns", "SELECT specific columns instead of *"]
+    },
+    {
+      "id": 39,
+      "category": "Query Optimization",
+      "question": "What is an execution plan and how do I read it?",
+      "answer": "Execution plan shows how database optimizer executes a query - row-by-row breakdown. Commands: EXPLAIN (MySQL), EXPLAIN ANALYZE (PostgreSQL), SET STATISTICS IO/TIME ON (SQL Server). Key metrics: Operation type (Seq Scan, Index Scan, Hash Join), rows affected, cost estimate, actual rows. Sequential scan: full table read, slow for large tables. Index scan: uses index, faster if selective. Hash join: best for large joins. Nested loop: slower, used when hash join not applicable. Merge join: works on sorted data. Cost: relative measure (lower = faster). Key indicators of problems: full table scans on large tables, high row counts, missing indexes. Example: sequential scan on users table with 1M rows without WHERE clause - add index. EXPLAIN output shows plan before execution, EXPLAIN ANALYZE includes actual runtime stats. Optimization: move filters to WHERE, add missing indexes, reorganize query to use better join.",
+      "keywords": ["execution", "plan", "explain", "optimize", "cost", "scan"],
+      "difficulty": "advanced",
+      "examples": ["EXPLAIN SELECT * FROM users WHERE id=5", "EXPLAIN ANALYZE SELECT * FROM orders"]
+    },
+    {
+      "id": 40,
+      "category": "Query Optimization",
+      "question": "How do I identify and fix slow queries?",
+      "answer": "Identify slow queries using slow query logs, monitoring tools, or APM (Application Performance Monitoring). Steps: enable slow query log (set threshold), analyze queries taking longer than threshold, use EXPLAIN to understand query plan, identify bottlenecks. Common issues: missing indexes (add index on WHERE columns), full table scans (use WHERE clause), suboptimal JOINs (replace with better JOINs), N+1 query problem (fetch related data in single query), unnecessary data fetching (SELECT columns instead of *). Fixes: add indexes, use better JOINs, optimize subqueries, batch queries, cache results. Example: query takes 5 seconds, full table scan on users table - add index on email column. Monitoring tools: MySQL's slow query log, PostgreSQL's pg_stat_statements, SQL Server's Query Store. Regular monitoring prevents performance degradation. Index strategy: index SELECT, WHERE, JOIN columns, not every column. Balance: indexes speed reads but slow writes.",
+      "keywords": ["slow", "query", "identify", "optimize", "index", "performance"],
+      "difficulty": "intermediate",
+      "examples": ["Enable slow query log", "Add index on frequently searched columns"]
+    },
+    {
+      "id": 41,
+      "category": "Security",
+      "question": "What is SQL injection and how do I prevent it?",
+      "answer": "SQL injection: attacker inserts malicious SQL code via user input to manipulate queries. Example: username field receives: admin' OR '1'='1 creating SELECT * FROM users WHERE username='admin' OR '1'='1' returning all users. Prevention: use parameterized queries/prepared statements (? placeholders), escape user input, use ORM frameworks, validate input, principle of least privilege (limited DB permissions), error handling (don't expose DB errors), Web Application Firewall. Parameterized example: PreparedStatement ps = conn.prepareStatement('SELECT * FROM users WHERE id = ?'); ps.setInt(1, id); prevents injection. Input validation: whitelist allowed characters, check length, type validation. Error handling: don't show SQL errors to users. Principle of least privilege: user account runs with minimum permissions needed. Code review: check all user input integration points.",
+      "keywords": ["injection", "security", "sql", "attack", "prevent", "parameterized"],
+      "difficulty": "advanced",
+      "examples": ["Use: SELECT * FROM users WHERE id = ?" , "Avoid: SELECT * FROM users WHERE id = ' + user_input + '"]
+    },
+    {
+      "id": 42,
+      "category": "Security",
+      "question": "What are database access control and user permissions?",
+      "answer": "Access control restricts database access to authorized users. User roles: DBA (full control), developer (SELECT, INSERT, UPDATE), analyst (SELECT only), application (specific tables). Permissions: SELECT (read), INSERT (add), UPDATE (modify), DELETE (remove), CREATE (create objects), ALTER (modify structure), DROP (delete objects), EXECUTE (run procedures). Granted at: database level, table level, column level, row level (enterprise feature). GRANT syntax: GRANT SELECT, UPDATE ON employees TO user1; GRANT SELECT (salary) ON salary_data TO analyst_role; revoke removes permissions. Role-based access: users assigned roles with predefined permissions. Views for security: create restricted views granting access to specific data. Example: sensitive salary data restricted to HR role only. Principle of least privilege: users get minimum permissions needed. Regular audits: review who has what permissions. Password policy: strong passwords, expiration, history. Multi-factor authentication: adds security layer.",
+      "keywords": ["access", "control", "permission", "role", "grant", "security"],
+      "difficulty": "intermediate",
+      "examples": ["GRANT SELECT ON employees TO analyst", "REVOKE INSERT ON sensitive_data FROM user1"]
+    },
+    {
+      "id": 43,
+      "category": "Security",
+      "question": "What are encryption and data at-rest vs in-transit protection?",
+      "answer": "Encryption protects data from unauthorized access. At-rest encryption: data encrypted on disk/storage. Transparent Data Encryption (TDE): automatic encryption at database level, transparent to applications. At-transit encryption: data encrypted during transmission. SSL/TLS: secures database connections. Encryption types: symmetric (same key for encrypt/decrypt, faster), asymmetric (public/private keys, slower). Key management: secure key storage, rotation, access control. Example: encrypt sensitive columns (credit cards, SSNs) not entire database. Hashing: one-way encryption for passwords - never store plain passwords. Salting: add randomness to hashing preventing rainbow table attacks. Compliance: HIPAA, PCI-DSS, GDPR require encryption. Performance: encryption adds CPU overhead but critical for security. Backup encryption: encrypt backup files separately. Audit logging: track who accesses encrypted data.",
+      "keywords": ["encryption", "security", "at-rest", "in-transit", "ssl", "tls"],
+      "difficulty": "advanced",
+      "examples": ["Enable TDE for database", "Use SSL for database connections"]
+    },
+    {
+      "id": 44,
+      "category": "Transactions",
+      "question": "What are transactions and ACID properties?",
+      "answer": "Transaction: sequence of operations treated as atomic unit - all succeed or all fail. ACID: Atomicity (all-or-nothing), Consistency (valid state), Isolation (independent), Durability (persisted). Atomicity: if error occurs, entire transaction rolls back. Example: money transfer debits account A and credits account B - both must succeed. Consistency: database moves from valid state to valid state. Constraints enforced, totals balance. Isolation: concurrent transactions don't interfere - see each other's committed data. Dirty read: reading uncommitted data (bad). Deadlock: two transactions wait for each other (database detects and rolls back). Durability: committed data survives system crash. Stored on disk, replicated for safety. Transaction control: BEGIN, COMMIT (save changes), ROLLBACK (undo changes). SAVEPOINT: partial rollback point. Example: BEGIN; UPDATE account1 SET balance=balance-100; UPDATE account2 SET balance=balance+100; COMMIT; If second UPDATE fails, both roll back. Transaction logging: enables recovery after crash.",
+      "keywords": ["transaction", "acid", "atomicity", "consistency", "isolation", "durability"],
+      "difficulty": "intermediate",
+      "examples": ["BEGIN; UPDATE; COMMIT;", "ROLLBACK to SAVEPOINT"]
+    },
+    {
+      "id": 45,
+      "category": "Transactions",
+      "question": "What is locking and how does it prevent conflicts?",
+      "answer": "Locking controls concurrent access to prevent conflicts. Lock types: shared lock (multiple readers), exclusive lock (single writer). Lock modes: optimistic (assume no conflict), pessimistic (lock before access). Row-level locking: most granular, high concurrency. Table-level locking: coarse grain, less concurrency but simpler. Deadlock: two transactions hold locks each waits for, causing wait cycle. Database detects and rolls back one transaction. Solutions: consistent lock order, timeouts, lock-free algorithms. Example: Transaction A locks row 1 then row 2, Transaction B locks row 2 then row 1 - deadlock. Transaction timeout: automatically cancel long-running operations. SELECT FOR UPDATE: explicitly locks rows for update. Phantom read: transaction reads data, another inserts, first reads again sees new data. Isolation level handles: repeatable read prevents phantom reads. Lock escalation: many row locks converted to table lock for efficiency. Monitor: view active transactions, locks, blocking situations.",
+      "keywords": ["lock", "locking", "concurrency", "conflict", "deadlock", "shared", "exclusive"],
+      "difficulty": "advanced",
+      "examples": ["SELECT FOR UPDATE", "Monitor locks with: SELECT * FROM sys.dm_tran_locks"]
+    },
+    {
+      "id": 46,
+      "category": "Data Backup",
+      "question": "What are backup types and why is backup strategy important?",
+      "answer": "Backup types: full backup (entire database), incremental (changes since last backup), differential (changes since last full backup). Full: largest size, slowest, complete recovery point. Incremental: smallest, fastest, needs all incremental backups sequentially for recovery. Differential: medium size/speed, needs only last full and last differential. Recovery Point Objective (RPO): acceptable data loss. Recovery Time Objective (RTO): acceptable downtime. Backup frequency: based on RPO. Critical system: full daily + incremental hourly. Less critical: full weekly. Strategy: combination of full, differential, incremental. Example: Full Sunday, Differential Wed, Incremental daily. Backup location: off-site storage prevents total data loss. Encryption: backup files should be encrypted. Retention: keep backups for compliance (GDPR, etc). Testing: regularly restore from backups to verify integrity. Monitoring: automated backup verification, alerts on failures. Cloud backups: automated, geographic redundancy, scalable.",
+      "keywords": ["backup", "recovery", "incremental", "differential", "full", "rpo", "rto"],
+      "difficulty": "intermediate",
+      "examples": ["Full daily backup", "Incremental every 4 hours"]
+    },
+    {
+      "id": 47,
+      "category": "Data Backup",
+      "question": "What is data replication and how does it improve availability?",
+      "answer": "Replication: copies data from primary to replica databases across different servers/locations. Types: synchronous (replica updated before primary commits, slower but safer), asynchronous (faster but possible data lag). Replication benefits: high availability (replica takes over if primary fails), load balancing (distribute reads), disaster recovery (replicas in different locations). Master-slave: primary (master) accepts writes, replicas (slaves) read-only. Multi-master: multiple databases accept writes (more complex). Log-based replication: replicate database transaction log. Statement-based: replicate SQL statements. Row-based: replicate changed rows. Replication delay: time for changes to appear on replica. Critical for: write-heavy applications (read replicas handle reads). Monitoring: check replication lag, data consistency. Conflict resolution: how to handle conflicting changes in multi-master. Failover: process of promoting replica when primary fails. Recovery: switch back to primary after it recovers. Testing: simulate failures to verify failover process.",
+      "keywords": ["replication", "master", "slave", "replica", "failover", "availability"],
+      "difficulty": "advanced",
+      "examples": ["Master-slave replication setup", "Multi-master replication for high availability"]
+    },
+    {
+      "id": 48,
+      "category": "Data Warehouse",
+      "question": "What is a data warehouse and how does it differ from operational databases?",
+      "answer": "Data warehouse: centralized repository for integrated data from multiple sources. Purpose: analytical queries and reporting, not operational transactions. Characteristics: denormalized schema (redundancy for speed), historical data, read-only data, optimized for complex queries. Operational database (OLTP): optimized for transactions, normalized, real-time, ACID compliance critical. Data warehouse (OLAP): optimized for analytics, denormalized, historical, consistency less critical than speed. Architecture: source systems → ETL → data warehouse → BI tools. Star schema: fact table (measurements) surrounded by dimension tables (attributes). Example: sales fact table with product, customer, date dimensions. Data mart: subset of warehouse focused on specific area. Data lake: raw data repository before transformation. Slowness acceptable: analytical queries take minutes/hours vs operational queries milliseconds. Example: operational DB tracks current inventory, warehouse tracks sales history. Governance: data quality, metadata, access control. Expensive: storage (large volume), processing power, specialized tools.",
+      "keywords": ["warehouse", "olap", "oltp", "analytics", "fact", "dimension"],
+      "difficulty": "advanced",
+      "examples": ["Star schema design", "Fact and dimension tables"]
+    },
+    {
+      "id": 49,
+      "category": "NoSQL Databases",
+      "question": "What are NoSQL databases and when should I use them?",
+      "answer": "NoSQL: non-relational databases handling unstructured/semi-structured data. Types: document (MongoDB), key-value (Redis), column-family (Cassandra), graph (Neo4j). Advantages: scalability (horizontal), flexibility (schema-less), performance (optimized for specific access patterns), handles massive data volume. Disadvantages: no ACID (most), no JOIN support, learning curve, eventual consistency. Use cases: real-time data, IoT sensor data, social networks, caching, document storage. Document DB: stores JSON-like documents, flexible schema. Key-value: fastest access, perfect for caching. Column-family: optimized for specific column queries. Graph: relationships are first-class, fast traversal. Consistency models: strong (immediate), eventual (delayed). Example: distributed system processing millions of log entries - NoSQL better than relational. Polyglot persistence: use relational for transactions, NoSQL for other needs. Not replacement for relational - different tools for different jobs. Migration: complex - need data transformation, downtime. Training: developers need different mindset.",
+      "keywords": ["nosql", "document", "mongodb", "schema", "flexible", "scalable"],
+      "difficulty": "advanced",
+      "examples": ["MongoDB document storage", "Redis key-value caching"]
+    },
+    {
+      "id": 50,
+      "category": "NoSQL Databases",
+      "question": "What is eventual consistency and how does it differ from strong consistency?",
+      "answer": "Strong consistency: write complete, all subsequent reads see newest data. Guarantees: data always accurate but slower (must wait for replication). Example: bank balance accurate immediately. Eventual consistency: write complete, replicas updated asynchronously - possible brief period where different systems see different data. Eventually (usually milliseconds) all systems consistent. Guarantees: immediate response, handles network partitions better. Example: Twitter like count slightly delayed. CAP theorem: can't guarantee Consistency, Availability, Partition tolerance simultaneously - choose 2. Relational DB: prioritize consistency (CA). NoSQL: often availability + partition tolerance (AP). Use cases strong consistency: financial systems, inventory management, critical data. Use cases eventual: social media, analytics, caching. Conflict resolution: when updates conflict at different replicas. Read-your-writes consistency: you see your own writes immediately. Causal consistency: related writes appear in order. Monitoring: track replication lag between systems.",
+      "keywords": ["eventual", "consistency", "strong", "cap", "theorem", "replication"],
+      "difficulty": "advanced",
+      "examples": ["Eventual consistency: social media likes", "Strong consistency: bank transactions"]
+    },
+    {
+      "id": 51,
+      "category": "Advanced SQL",
+      "question": "What is a HAVING clause and how is it different from WHERE?",
+      "answer": "WHERE filters rows before grouping, HAVING filters groups after grouping. WHERE operates on individual rows, HAVING on aggregated results. Syntax: SELECT column, COUNT(*) FROM table WHERE condition GROUP BY column HAVING COUNT(*) > 5. Example: SELECT department, AVG(salary) FROM employees WHERE hire_date > '2020-01-01' GROUP BY department HAVING AVG(salary) > 50000 finds departments with average salary > 50k among recent hires. WHERE evaluates before GROUP BY (performance better), HAVING after GROUP BY (can't use in WHERE). Can't use aggregate functions in WHERE (not allowed in non-grouped queries). Multiple conditions: WHERE age > 25 AND department='Sales' AND HAVING COUNT(*) > 3. HAVING can use aliases. Performance: apply WHERE first to reduce rows before grouping.",
+      "keywords": ["having", "where", "group", "filter", "aggregate"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT dept, AVG(salary) FROM emp GROUP BY dept HAVING AVG(salary)>100000"]
+    },
+    {
+      "id": 52,
+      "category": "Advanced SQL",
+      "question": "What is INTERSECT EXCEPT and how do they work?",
+      "answer": "INTERSECT returns rows appearing in both result sets. EXCEPT (or MINUS) returns rows in first set but not second. Syntax: SELECT col FROM table1 INTERSECT SELECT col FROM table2 returns common values. Example: SELECT customer_id FROM active_orders INTERSECT SELECT customer_id FROM loyalty_program finds customers both with active orders AND in loyalty program. EXCEPT syntax: SELECT user_id FROM all_users EXCEPT SELECT user_id FROM suspended_users returns non-suspended users. Rules: same number/order of columns, compatible data types. UNION combines (with duplicates: UNION ALL), INTERSECT finds common, EXCEPT finds differences. Performance: EXCEPT/INTERSECT slower than JOINs - use JOINs when possible. NULL handling: NULL = NULL in result sets. ORDER BY clause applies to final result. Multiple operations: (A UNION B) INTERSECT C.",
+      "keywords": ["intersect", "except", "minus", "set", "operations"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT * FROM table1 INTERSECT SELECT * FROM table2", "SELECT * FROM table1 EXCEPT SELECT * FROM table2"]
+    },
+    {
+      "id": 53,
+      "category": "Advanced SQL",
+      "question": "What are STRING functions and how do I manipulate text in SQL?",
+      "answer": "String functions manipulate text data. Common: CONCAT() joins strings, LENGTH() counts characters, SUBSTRING() extracts portion, UPPER/LOWER convert case, TRIM removes spaces, REPLACE substitutes text, INSTR finds position, REVERSE reverses order. Examples: CONCAT('Hello', ' ', 'World') = 'Hello World'. LENGTH('database') = 8. SUBSTRING('Hello', 1, 3) = 'Hel'. UPPER('sql') = 'SQL'. TRIM('  text  ') = 'text'. REPLACE('old text', 'old', 'new') = 'new text'. INSTR('hello', 'l') = 3. String functions vary by database. Useful for: data cleaning, formatting output, validation, pattern matching. LIKE with wildcards: LIKE 'A%' starts with A, LIKE '%Z' ends with Z, LIKE '%O%' contains O. REGEX: complex pattern matching (database-specific). Combining multiple: UPPER(SUBSTRING(name, 1, 1)) gets first letter uppercase.",
+      "keywords": ["string", "function", "concat", "substring", "upper", "lower", "trim"],
+      "difficulty": "beginner",
+      "examples": ["SELECT CONCAT(first_name, ' ', last_name) FROM users", "SELECT UPPER(name) FROM students"]
+    },
+    {
+      "id": 54,
+      "category": "Advanced SQL",
+      "question": "What is CAST and data type conversion?",
+      "answer": "CAST converts data from one type to another. Syntax: CAST(value AS target_type). Example: CAST('123' AS INTEGER) converts string to number. Common conversions: STRING/VARCHAR, INTEGER, DECIMAL, DATE, BOOLEAN. Example: SELECT email, CAST(user_id AS VARCHAR) FROM users converts number to string. Date conversion: CAST('2024-01-15' AS DATE) ensures proper format. Implicit vs explicit: database may automatically convert (implicit), CAST is explicit. Implicit conversion can cause unexpected results - use CAST for clarity. Type mismatch: comparing string '5' with integer 5 may cause implicit conversion. Performance: avoid CAST in WHERE clause on indexed columns (disables index). Example bad: SELECT * FROM users WHERE CAST(created_at AS DATE) = '2024-01-15' better: WHERE created_at >= '2024-01-15' AND created_at < '2024-01-16'. Database-specific functions: CONVERT (SQL Server), TO_NUMBER (Oracle).",
+      "keywords": ["cast", "convert", "type", "data", "implicit", "explicit"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT CAST(salary AS DECIMAL(10,2)) FROM employees", "SELECT CAST('2024-01-01' AS DATE)"]
+    },
+    {
+      "id": 55,
+      "category": "Database Design",
+      "question": "What is an Entity-Relationship (ER) diagram and how do I design one?",
+      "answer": "ER diagram models database structure showing entities, attributes, relationships. Entities: things (Student, Course). Attributes: properties (name, email, grade). Relationships: how entities relate (Student enrolls Course). Symbols: rectangles (entities), ovals (attributes), diamonds (relationships), lines (connections). Cardinality: how many of one entity relate to other - 1:1 (one-to-one), 1:N (one-to-many), N:M (many-to-many). Example: Student enrolls many Courses, Course has many Students (N:M). Primary key: unique identifier (underlined). Foreign key: references another table's primary key. Design process: identify entities, list attributes, define relationships, determine cardinality, resolve many-to-many (create junction table). Many-to-many resolution: Student/Course N:M becomes Student 1:N Enrollment N:1 Course. Weak entity: depends on another entity. Attributes types: single-valued, multi-valued, derived. Normalization: apply to remove anomalies. Tools: Lucidchart, MySQL Workbench, ERDPlus.",
+      "keywords": ["er", "diagram", "entity", "relationship", "attribute", "cardinality"],
+      "difficulty": "intermediate",
+      "examples": ["Student (1) -> (N) Enrollment -> (N) Course", "junction table for N:M relationships"]
+    },
+    {
+      "id": 56,
+      "category": "Database Design",
+      "question": "What is a schema and how do I organize database structure?",
+      "answer": "Schema: blueprint of database structure - tables, columns, constraints, indexes. Defines what data can be stored and how. Different from instance (actual data). Document schema: data structure (not enforcement like relational). Schema design process: requirements → ER diagram → normalized schema → create schema via DDL. Constraints: PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL, CHECK, DEFAULT. Example schema: CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(100) NOT NULL, email VARCHAR(100) UNIQUE). Good schema: normalized, clear naming, appropriate constraints, good performance, scalable. Poor schema: redundancy, missing constraints, unclear names, performance issues. Versioning schema: track changes, migration scripts when schema evolves. Breaking changes: removing columns (loses data), adding NOT NULL column (fails if old data). Non-breaking: adding nullable column, removing constraints. Schema migration tools: Liquibase, Flyway automate versioning. Documentation: maintain schema documentation for team.",
+      "keywords": ["schema", "structure", "table", "column", "constraint", "blueprint"],
+      "difficulty": "intermediate",
+      "examples": ["CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(100))"]
+    },
+    {
+      "id": 57,
+      "category": "Database Design",
+      "question": "What are surrogate keys and natural keys?",
+      "answer": "Surrogate key: artificial identifier (auto-increment ID) - no business meaning. Natural key: real attribute(s) uniquely identifying entity (email, SSN). Surrogate advantages: stable (doesn't change like email), simple (single column), efficient (integer faster than string), handles NULL. Surrogate disadvantages: extra column (storage), artificial (no meaning), requires dependency on DBMS. Natural advantages: business meaningful, tells story, may be sparse (if natural key absent). Natural disadvantages: changes over time (email changes), multiple columns (composite key complexity), NULL handling. Best practice: use surrogate primary key for relationships, natural key as unique constraint if applicable. Example: user table has surrogate ID (primary key) and email (unique constraint). Many-to-many: use surrogate in junction table. Performance: surrogate usually faster (smaller data type). Composite key: multiple columns together unique. Recommendations: always use surrogate primary key for ER relationships, use natural key as business key constraint.",
+      "keywords": ["surrogate", "natural", "key", "artificial", "identifier"],
+      "difficulty": "intermediate",
+      "examples": ["Surrogate: user_id INT PRIMARY KEY", "Natural: email VARCHAR(100) UNIQUE"]
+    },
+    {
+      "id": 58,
+      "category": "Database Design",
+      "question": "What is denormalization and when should I use it?",
+      "answer": "Denormalization: intentionally add redundancy by storing calculated/related data together violating normalization. Trade: data redundancy for query performance. Techniques: duplicate data, cache calculations, merge normalized tables. Example: denormalize by storing customer address with every order (normalized: look up in customer table). Benefits: fewer JOINs, faster queries, simpler queries. Drawbacks: redundancy, consistency challenges (update all copies), extra storage. When to denormalize: after optimization, still slow. Heavy reads, light writes (updates less frequent). Real-time reporting. Analytical queries (OLAP). Materialized views: pre-calculated aggregates. Example: pre-calculate sum(orders) in customer table rather than SUM() query. Implementation: triggers maintain consistency when source updates. Monitoring: track how often denormalized data accessed. Refresh strategy: how often to recalculate. Denormalization decision: measure benefits before implementing. Most systems: stay normalized, denormalize only where proven necessary.",
+      "keywords": ["denormalization", "redundancy", "performance", "joins", "aggregates"],
+      "difficulty": "advanced",
+      "examples": ["Store order total in orders table", "Cache customer order count"]
+    },
+    {
+      "id": 59,
+      "category": "Indexing",
+      "question": "What are types of indexes and when to use each?",
+      "answer": "Index types: primary key (unique, not null), unique (no duplicates, allows null), full-text (text search), spatial (geographic data), composite (multiple columns), bitmap (for low-cardinality), partial (subset of rows). Primary key: enforces uniqueness, creates clustered index (data ordered by key). Unique: prevents duplicates but doesn't cluster unless primary key. Full-text: fast text searching, not suitable for exact match. Spatial: geographic queries. Composite: multiple columns, order matters - useful for WHERE a AND b, ORDER BY a,b. Bitmap: efficient for low-cardinality (few distinct values). Partial: index only WHERE condition matches - saves space. B-tree index: most common, efficient range queries. Hash index: fast exact match, not range. Choosing columns to index: WHERE clauses, JOIN conditions, ORDER BY, high cardinality (many distinct values). Avoiding indexes: low cardinality, updated frequently, small tables, nullable columns. Performance trade-off: indexes speed reads but slow writes (inserts, updates, deletes). Regular maintenance: rebuild, analyze.",
+      "keywords": ["index", "types", "primary", "unique", "composite", "full-text"],
+      "difficulty": "intermediate",
+      "examples": ["Composite index: CREATE INDEX idx_dept_salary ON emp(department, salary)"]
+    },
+    {
+      "id": 60,
+      "category": "Indexing",
+      "question": "What is query optimization using indexes effectively?",
+      "answer": "Index optimization improves query speed dramatically. Rule 1: index columns in WHERE clause. SELECT * FROM employees WHERE department='Sales' benefit from index on department. Rule 2: index JOIN columns. SELECT * FROM orders o JOIN customers c ON o.customer_id = c.id benefits from indexes on both customer_id and id. Rule 3: index columns in ORDER BY. SELECT * FROM products ORDER BY category, price improved with composite index (category, price). Index selectivity: how many rows match condition. High selectivity: index effective (few rows). Low selectivity: index ineffective ('gender IN (M,F)' poor). Left prefix: composite index (a,b,c) used for WHERE a, WHERE a AND b, WHERE a AND b AND c but not WHERE b or WHERE c. Covering index: all columns needed already in index - avoids table lookup. Example: index (customer_id, total) covers SELECT customer_id, total avoiding table access. Index not used: functions in WHERE, type mismatch, wrong column order. Monitor: statistics, slow query logs, execution plans.",
+      "keywords": ["index", "optimization", "selectivity", "composite", "covering"],
+      "difficulty": "intermediate",
+      "examples": ["CREATE INDEX idx_dept ON employees(department)", "Covering: CREATE INDEX idx_cust_total ON orders(customer_id, total)"]
+    },
+    {
+      "id": 61,
+      "category": "Performance Tuning",
+      "question": "What is connection pooling and why is it important?",
+      "answer": "Connection pooling: maintain pool of database connections reusing them instead of creating new. Benefits: faster (no connection creation overhead), resource efficient (limit connections), higher throughput. How: application creates pool at startup, requests connection from pool, returns when done, connection stays open for reuse. Pooling parameters: min connections, max connections, timeout, idle timeout. Too small pool: requests wait (slowdown). Too large: resource waste. Example: web application with 1000 users, 20 connection pool handles all (users share). Connection libraries: C3P0, HikariCP (Java), sqlalchemy (Python), psycopg2 (PostgreSQL). Monitoring: active connections, waiting requests, pool utilization. Connection leak: application gets connection but never returns - monitoring detects. Timeouts: kill idle connections after period. Load balancing: distribute connections across multiple database instances. Best practice: always use connection pooling in production applications. Typical production pools: 10-50 connections depending on workload.",
+      "keywords": ["pooling", "connection", "reuse", "resource", "performance"],
+      "difficulty": "advanced",
+      "examples": ["HikariCP max pool size: 20", "psycopg2 connection pool setup"]
+    },
+    {
+      "id": 62,
+      "category": "Performance Tuning",
+      "question": "What is caching and how does it improve database performance?",
+      "answer": "Caching: store frequently accessed data in fast memory reducing database hits. Types: query result caching, object caching, page caching. Query caching: cache SELECT results, invalidate on INSERT/UPDATE/DELETE. Example: cache top 10 products list (changes rarely). Object caching: serialize database objects to cache (Redis, Memcached). Page caching: cache HTML pages (web tier), invalidate on content change. Cache strategies: write-through (update cache and DB), write-behind (update cache, DB later), write-invalidate (delete cache, DB source of truth). TTL (Time To Live): cache expires after period - balance freshness vs performance. Key design: include parameters - cache key for 'top_10_products_2024' different from '2025'. Invalidation: manually on data change or TTL expiry. Cache stampede: many requests hit expired cache queuing behind one refresh. Distributed cache: Redis across multiple servers. Monitoring: hit rate (%), miss rate, memory usage. Common tools: Redis, Memcached, application-level caching.",
+      "keywords": ["cache", "caching", "redis", "ttl", "invalidation", "performance"],
+      "difficulty": "intermediate",
+      "examples": ["Redis SETEX key 3600 value", "Cache top products with 1-hour TTL"]
+    },
+    {
+      "id": 63,
+      "category": "Performance Tuning",
+      "question": "What is sharding and horizontal partitioning?",
+      "answer": "Sharding: split data across multiple database instances (shards). Each shard holds subset of data, collectively complete. Horizontal scale: add more physical servers for more capacity. Shard key: determines which shard data goes to. Example: user_id % 10 = shard_number (user 1→shard 1, user 11→shard 1, user 2→shard 2). Benefits: distribute load, each shard smaller, faster queries. Challenges: consistent hashing (reshuffling on add/remove shard), distributed transactions complex, querying across shards. Example: user database sharded by region - US data on shard 1, EU on shard 2. Resharding: adding/removing shards requires rebalancing. Sticky sharding: ensure requests from same user hit same shard (caching). Monitoring: data distribution across shards, query distribution. When to shard: database too large for single server, capacity exceeded. Not always solution: added complexity, operational overhead.",
+      "keywords": ["sharding", "partitioning", "horizontal", "shard", "key", "distribute"],
+      "difficulty": "advanced",
+      "examples": ["Shard by user_id % number_of_shards", "Geographic sharding: region -> shard"]
+    },
+    {
+      "id": 64,
+      "category": "Information Systems",
+      "question": "What is data governance and why is it important?",
+      "answer": "Data governance: policies, procedures, controls managing data throughout lifecycle. Components: data quality, metadata management, data lineage, access control, compliance. Data quality: accuracy, completeness, consistency, timeliness. Example: customer address should match shipping records. Metadata management: track data definitions, ownership, lineage. Data lineage: trace data sources through transformations. Master data management (MDM): single source of truth for key entities (customer, product). Privacy compliance: GDPR, HIPAA, PCI-DSS regulations. Access control: who can access what data, audit trails. Data steward: responsible for domain data (sales, HR). Data catalog: centralized registry of all data assets. Ownership: clear responsibility for data quality. Retention policies: how long keep data, archival, deletion. Monitoring: data quality metrics, compliance tracking. Benefits: regulatory compliance, trust, efficiency, decision quality. Challenges: cultural, organizational complexity.",
+      "keywords": ["governance", "quality", "metadata", "compliance", "steward"],
+      "difficulty": "advanced",
+      "examples": ["Data steward for customer master data", "Data retention: keep for 3 years then archive"]
+    },
+    {
+      "id": 65,
+      "category": "Information Systems",
+      "question": "What is ETL and how does data flow through pipelines?",
+      "answer": "ETL: Extract (source data), Transform (manipulate/clean), Load (target). ETL pipelines: sequences of operations moving data source → warehouse. Extract: read from files, APIs, databases. Transform: filter, aggregate, join, enrich, validate, deduplicate. Load: write to warehouse, data marts, reporting databases. Example pipeline: Extract sales from ERP → Transform currency conversion, validate amounts → Load to sales warehouse. Data validation: check format, ranges, required fields, duplicates. Enrichment: add calculated fields, join with reference data. Deduplication: identify/remove duplicates. Scheduling: batch (nightly), real-time (streaming). Orchestration tools: Airflow, Talend, Informatica. Error handling: retry logic, notification on failure, quarantine bad records. Monitoring: pipeline execution time, data volumes, quality metrics. Performance: optimize extraction queries, parallel processing, batch sizes. Data quality gates: validate at each step, remediation process.",
+      "keywords": ["etl", "extract", "transform", "load", "pipeline", "data"],
+      "difficulty": "advanced",
+      "examples": ["ETL pipeline: Extract -> Transform -> Load", "Airflow DAG scheduling daily ETL"]
+    },
+    {
+      "id": 66,
+      "category": "Information Systems",
+      "question": "What is data lineage and why is it critical for data management?",
+      "answer": "Data lineage: chain of data transformation from source to target. Shows: where data originates, how its transformed, where its used. Forward lineage: source → transformations → target. Backward lineage: trace impact of data change. Benefits: impact analysis (change affects what), debugging (find data quality issue root), compliance (GDPR 'where is my data'), optimization (identify bottlenecks). Tools: lineage visualization, data catalog integration. Example: customer table lineage - sources (CRM, ERP) → transformations (merge, enrich) → warehouse → BI reports. Data quality root cause: lineage identifies problematic transformation. Regulatory audit: demonstrate data traceability. Maintenance: understand dependencies before changing. Documentation: lineage documents data relationships. Automated tracking: systems auto-generate lineage from metadata. Challenges: complexity at scale, keeping current as systems change.",
+      "keywords": ["lineage", "source", "target", "transformation", "traceability", "impact"],
+      "difficulty": "advanced",
+      "examples": ["Lineage: CRM -> ETL -> DW -> BI Report", "Trace impact of data quality issue"]
+    },
+    {
+      "id": 67,
+      "category": "Cloud Databases",
+      "question": "What are cloud databases and what benefits do they provide?",
+      "answer": "Cloud databases: database services in cloud (AWS, Azure, GCP, etc). Types: managed relational (RDS), NoSQL (DynamoDB), data warehouse (Redshift, BigQuery). Benefits: scalability (auto-scale), reliability (backups, failover), maintenance-free (provider manages), global distribution, pay-as-you-go pricing. Managed service: provider handles: patching, backups, replication, monitoring. Disadvantages: vendor lock-in, network latency, cost control needed, data sovereignty concerns. Serverless databases: no server management (DynamoDB, Cloud Firestore) - scale automatically. Migration challenges: existing on-premise systems to cloud, downtime management, data transfer costs. Examples: AWS RDS (managed MySQL/PostgreSQL), Azure SQL Database, Google Cloud SQL. Cost optimization: reserved instances, auto-scaling policies, data archival. Security: encryption, VPC isolation, IAM access control. Hybrid: cloud + on-premise (hybrid data warehouse). Multi-region replication: disaster recovery, reduced latency.",
+      "keywords": ["cloud", "database", "managed", "serverless", "aws", "scaling"],
+      "difficulty": "intermediate",
+      "examples": ["AWS RDS with auto-scaling", "DynamoDB serverless NoSQL", "BigQuery data warehouse"]
+    },
+    {
+      "id": 68,
+      "category": "Cloud Databases",
+      "question": "What is database-as-a-service (DBaaS) and how is it different from traditional databases?",
+      "answer": "DBaaS: cloud provider hosts and manages database fully - you just use it. Traditional: self-hosted on-premise or own cloud instances (IaaS). DBaaS includes: infrastructure, patching, backups, monitoring, scaling. Examples: Salesforce (SaaS uses DBaaS), Firebase, MongoDB Atlas. Characteristics: no installation, automatic updates, built-in compliance, disaster recovery, multi-region. Cost: subscription-based, predictable, scales with usage. Traditional advantages: full control, customization, potential cost savings at scale. DBaaS advantages: less overhead, automatic scaling, pay-as-you-go, focus on application not infrastructure. Trade-off: less control for less operations. Security: provider handles infrastructure, you handle data encryption, access control. Performance: provider optimizes infrastructure, potential limitations on customization. Scalability: auto-scale vs manual in traditional. Lock-in: harder to migrate from DBaaS. Choose: startup/variable workload → DBaaS, stable large systems → traditional may be cost effective.",
+      "keywords": ["dbas", "managed", "service", "cloud", "scaling", "subscription"],
+      "difficulty": "intermediate",
+      "examples": ["Firebase DBaaS", "MongoDB Atlas DBaaS", "AWS DynamoDB serverless"]
+    },
+    {
+      "id": 69,
+      "category": "Data Analysis",
+      "question": "What is SQL for analytics and BI (Business Intelligence)?",
+      "answer": "Analytical SQL: complex queries aggregating data for reporting/decision making. Differs from operational SQL (simple fast queries). Techniques: window functions, CTEs, complex aggregations, GROUP BY, subqueries. Example: SELECT month, SUM(sales), ROW_NUMBER() OVER(ORDER BY sales DESC) FROM sales GROUP BY month. BI reporting: dashboards, KPIs, trend analysis, forecasting. SQL provides: clean data, calculated metrics, dimensions for drill-down. Performance: aggregated data, summary tables, materialized views cache results. Challenges: large data volume (OLAP databases optimized), long query times (acceptable vs operational), joins across many tables. Tools: Tableau, Power BI, Looker query databases via SQL. Data marts: pre-aggregated popular queries. Star schema: optimized for analytical queries. Example BI query: SELECT product, month, SUM(sales), AVG(discount), COUNT(orders) grouped by product/month. Indexes critical: proper indexing makes analytical queries fast. Advanced analytics: machine learning integration.",
+      "keywords": ["analytics", "bi", "reporting", "aggregation", "dashboard", "kpi"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT dept, SUM(salary), AVG(salary) FROM emp GROUP BY dept"]
+    },
+    {
+      "id": 70,
+      "category": "Data Analysis",
+      "question": "What is dimensional modeling and star schemas?",
+      "answer": "Dimensional modeling: organize data for easy analysis - facts and dimensions. Fact tables: events/transactions (measurements). Dimension tables: context (who, what, when, where). Star schema: fact center, dimensions radiating outward. Example: sales fact (date, product, customer, amount) with date/product/customer dimensions. Snowflake schema: normalized dimensions (hierarchy) vs star (denormalized). Conformed dimensions: same dimension used across multiple fact tables. Example: date dimension used in sales, inventory, employee fact tables. Slowly changing dimensions: track changes over time (customer address changed). SCD Type 1: overwrite old value. Type 2: keep history with effective dates. Type 3: keep previous value columns. Metrics: pre-calculated aggregates (sales fact already sums to daily/monthly). Design: fact grain (atomic transaction vs aggregated), dimension attributes (all analysis needs), conformed dimensions (consistency). Benefits: intuitive for non-technical users, performs well, supports OLAP.",
+      "keywords": ["dimensional", "modeling", "fact", "dimension", "star", "schema"],
+      "difficulty": "advanced",
+      "examples": ["Star schema: Sales fact with Product, Customer, Date dimensions"]
+    },
+    {
+      "id": 71,
+      "category": "Database Monitoring",
+      "question": "What is database monitoring and what metrics should I track?",
+      "answer": "Database monitoring: observe system health, performance, usage. Key metrics: CPU usage, memory, disk I/O, connections, queries per second, cache hit ratio. CPU: high CPU indicates heavy processing, consider query optimization. Memory: low memory causes slowdown (disk paging), insufficient cache. Disk I/O: bottleneck, indicates index missing or poor design. Active connections: monitor pool usage, identify connection leaks. Query metrics: execution time, slow queries logged, query volume. Cache hit ratio: high percentage good (data in memory). Lock wait times: high waiting indicates contention. Replication lag: slaves behind master. Uptime: track downtime, availability percentage. Alerts: set thresholds triggering notifications (CPU >80%, disk >90%). Tools: New Relic, Datadog, Grafana, native monitoring (MySQL Workbench). Logging: query logs, error logs, application logs. Baseline: understand normal performance to spot anomalies. Proactive: fix before becoming problem.",
+      "keywords": ["monitoring", "metrics", "performance", "cpu", "memory", "disk"],
+      "difficulty": "intermediate",
+      "examples": ["CPU usage <80%", "Cache hit ratio >90%", "Query response <100ms"]
+    },
+    {
+      "id": 72,
+      "category": "Database Monitoring",
+      "question": "What are deadlocks and how do I troubleshoot them?",
+      "answer": "Deadlock: two transactions hold locks each waits for other - neither proceeds. Example: Transaction A locks Row 1, waits for Row 2. Transaction B locks Row 2, waits for Row 1. Neither releases lock (waiting), detecting deadlock, database rolls back one. Prevention: consistent lock order (always lock order A→B). Timeout: kill long-running transactions. Lock-free: optimistic locking, versioning. Identification: database logs deadlock, monitor active locks. Root cause: analyze transaction order, locks held. Common patterns: batch processing (different order each batch), application loops (iterating in different order). Resolution: application retries, user retries, timeout handling. Monitoring: deadlock frequency (should be rare), which queries involved. Locks per query: SELECT * FROM sys.dm_tran_locks (SQL Server). PostgreSQL: SELECT * FROM pg_locks. Diagnosis: identify lock order, dependencies. Reduction: shorter transactions, smaller locks, minimize lock time. Design: avoid nested transactions, minimize lock scope.",
+      "keywords": ["deadlock", "lock", "cycle", "transaction", "wait", "timeout"],
+      "difficulty": "advanced",
+      "examples": ["Consistent lock order prevention", "Transaction timeout: kill after 30 seconds"]
+    },
+    {
+      "id": 73,
+      "category": "Concurrency",
+      "question": "What is isolation level and how does it affect concurrency?",
+      "answer": "Isolation level: degree to which concurrent transactions isolate from each other. Levels (lowest to highest): Read Uncommitted (dirty reads possible), Read Committed (committed data only), Repeatable Read (consistent within transaction), Serializable (complete isolation). Dirty read: read uncommitted data from transaction that may rollback. Phantom read: transaction reads rows that appear/disappear due to concurrent inserts/deletes. Non-repeatable read: reading same row twice gets different values. Higher isolation: safer (consistent) but lower performance (more locking). Lower isolation: better performance but risk inconsistency. Default: usually Read Committed (good balance). Use cases: reporting (Read Committed fast), financial (Serializable safety-critical), analytics (dirty reads acceptable). Setting: SET TRANSACTION ISOLATION LEVEL READ COMMITTED; Trade-off: always exists between consistency and concurrency. Monitoring: lock waits, deadlocks increase with higher isolation. Tuning: find minimum isolation level ensuring correctness.",
+      "keywords": ["isolation", "level", "committed", "repeatable", "serializable", "dirty"],
+      "difficulty": "advanced",
+      "examples": ["SET TRANSACTION ISOLATION LEVEL SERIALIZABLE", "Higher isolation = more locks"]
+    },
+    {
+      "id": 74,
+      "category": "Advanced SQL",
+      "question": "What is VACUUM and table maintenance in PostgreSQL?",
+      "answer": "VACUUM: PostgreSQL maintenance removing dead rows (space reclamation). UPDATE/DELETE mark rows dead but not removed (MVCC - Multi-Version Concurrency Control). Bloat: unused space accumulates, table grows, performance degrades. VACUUM: reclaims space, updates statistics, freezes old transactions. VACUUM ANALYZE: also updates query planner statistics. AUTOVACUUM: runs automatically (default enabled). Full VACUUM: locks table (slow), total reclaim. Regular VACUUM: online (no locks), incremental. VACUUM FREEZE: marks rows frozen preventing data loss on wraparound. Example: heavily deleted table may be 50% dead rows - VACUUM compacts. Index bloat: REINDEX rebuilds indexes from scratch. Monitoring: find bloated tables via monitoring tools. Over-vacuuming: reduces write performance (vacuum overhead). Under-vacuuming: table bloat, slow queries. Settings: autovacuum parameters tune frequency. Best practice: monitor bloat, regularly VACUUM ANALYZE.",
+      "keywords": ["vacuum", "maintenance", "postgresql", "bloat", "dead", "rows"],
+      "difficulty": "advanced",
+      "examples": ["VACUUM users;", "VACUUM ANALYZE;", "ALTER TABLE users SET (autovacuum_vacuum_scale_factor = 0.05);"]
+    },
+    {
+      "id": 75,
+      "category": "Database Administration",
+      "question": "What are user roles and permission management best practices?",
+      "answer": "User roles: groups of permissions assigned to users. Principle of least privilege: users minimum permissions needed. Role types: admin (all permissions), developer (develop/test only), analyst (read-only), application (specific functions). Creating roles: CREATE ROLE analyst; GRANT SELECT ON sales TO analyst; GRANT analyst TO user1; Column-level security: GRANT SELECT (name, email) ON users TO marketing (not salary). Row-level security: WHERE clause automatically applied based on user. Best practice: role-based not individual permissions. Application role: separate role for application (less privilege than DBA). Audit trail: track permission changes, who added/removed. Regular review: audit who has what permissions, remove unnecessary. Separation of duties: different roles for different operations. Example: Data Entry creates records, Manager approves, Accountant records. Password management: strong passwords, expiration, multi-factor auth. Temporary access: time-limited elevated permissions. Monitoring: failed access attempts, unusual access patterns.",
+      "keywords": ["role", "permission", "privilege", "security", "grant", "access"],
+      "difficulty": "intermediate",
+      "examples": ["CREATE ROLE analyst; GRANT SELECT ON sales TO analyst"]
+    },
+    {
+      "id": 76,
+      "category": "Database Administration",
+      "question": "What is database partitioning and what types exist?",
+      "answer": "Partitioning: split large tables into smaller physical segments (partitions). Benefits: improved query performance (only needed partitions scanned), easier maintenance (partition-level backups), better resource management. Partition types: range (by value range), list (by specific values), hash (by formula), composite (combination). Range partitioning: example time-based - partition by year/month (2024 sales in one partition). List partitioning: example geography - US in partition1, EU in partition2. Hash partitioning: example modulo - user_id%10 distributes evenly. Performance: WHERE year='2024' only scans 2024 partition (huge speedup). Maintenance: drop old partitions (2020 data), add new (2025), no full table scan. Disadvantages: complexity, specific to query patterns, overhead if poorly designed. Partition pruning: query optimizer skips partitions not matching WHERE. Example: SELECT * FROM sales WHERE date='2024-01-15' scans only January 2024 partition. Size limit: typically partition when table >100GB or millions of rows.",
+      "keywords": ["partition", "range", "list", "hash", "pruning", "performance"],
+      "difficulty": "advanced",
+      "examples": ["CREATE TABLE sales PARTITION BY RANGE(YEAR(date))", "PARTITION sales_2024 VALUES LESS THAN (2025)"]
+    },
+    {
+      "id": 77,
+      "category": "Advanced SQL",
+      "question": "What are materialized views and how do they improve performance?",
+      "answer": "Materialized view: pre-calculated query result stored as table (not dynamic like view). Regular view: computed every access (fresh but slow). Materialized: computed once, stored (stale but fast). Refresh: periodically update using source data. Syntax: CREATE MATERIALIZED VIEW top_products AS SELECT product, SUM(sales) FROM orders GROUP BY product; Refresh: REFRESH MATERIALIZED VIEW top_products; Benefits: fast access to complex calculations, reduces source system load. Drawbacks: storage (duplicates data), staleness (may not be current), refresh time (computation overhead). Use cases: expensive calculations, frequently accessed aggregates, dashboards. Incremental refresh: only update changed data vs full refresh. Example: sales dashboard with 50 metrics materialized daily (fast for users). Strategies: full refresh overnight, real-time updates for critical metrics. Monitoring: staleness acceptable?, refresh duration, storage usage. Alternative: cache query results in application layer.",
+      "keywords": ["materialized", "view", "performance", "refresh", "aggregate", "stale"],
+      "difficulty": "advanced",
+      "examples": ["CREATE MATERIALIZED VIEW top_products AS ...", "REFRESH MATERIALIZED VIEW top_products"]
+    },
+    {
+      "id": 78,
+      "category": "Information Systems",
+      "question": "What is master data management and data quality?",
+      "answer": "Master Data Management (MDM): single source of truth for key business entities (customer, product, location). Problem: same entity different definitions across systems. Solution: centralized master data, distribute to systems. Benefits: consistency, data quality, reliable reporting, better decisions. Implementation: identify masters (who, what), consolidate, govern access. Customer example: consolidate customer data from CRM, ERP, support systems. Data Quality: accuracy, completeness, consistency, timeliness. Assessment: quality scorecard metrics. Issues: duplicate records, missing values, typos, conflicting versions. Remediation: automated (rules), manual (review), prevention (validation). Governance: data steward, standard definitions, validation rules. Example: product master defines name, category, supplier (all systems use same). Challenges: organizational changes, legacy systems, integration complexity. Tools: Informatica, Talend, custom solutions. ROI: improved operational efficiency, customer satisfaction, decision quality.",
+      "keywords": ["master", "data", "quality", "governance", "consistency", "single"],
+      "difficulty": "advanced",
+      "examples": ["Customer master consolidation", "Product data quality scorecard"]
+    },
+    {
+      "id": 79,
+      "category": "Information Systems",
+      "question": "What is OLTP vs OLAP and their differences?",
+      "answer": "OLTP (Online Transaction Processing): operational systems handling daily business. Characteristics: normalized, fast single-row operations, acid compliance critical, users: many, small amounts, optimized for writes. Example: order entry (INSERT 1 order), inventory update (UPDATE quantity). OLAP (Online Analytical Processing): warehouse systems for analysis. Characteristics: denormalized, slow complex queries, consistency less critical, users: few, large amounts, optimized for reads. Example: sales report (SUM all 2024 sales by region). Database design: OLTP normalized (3NF reduces anomalies), OLAP denormalized (star schema faster queries). Performance: OLTP indexes on transaction columns, OLAP materialized views of aggregations. Scale: OLTP many users (connection pooling), OLAP batch processes. Integration: OLTP captures transactions, ETL transfers to OLAP warehouse nightly. Separation: don't run analytics on production (OLTP) system (impacts users). Tools: SQL Server Express suitable OLTP, Redshift suitable OLAP. Modern: operational analytics (near real-time warehouse updates).",
+      "keywords": ["oltp", "olap", "transaction", "analysis", "operational", "warehouse"],
+      "difficulty": "intermediate",
+      "examples": ["OLTP: order entry", "OLAP: sales analytics", "OLTP normalized, OLAP denormalized"]
+    },
+    {
+      "id": 80,
+      "category": "Advanced SQL",
+      "question": "What is recursive SQL and when do I use it?",
+      "answer": "Recursive SQL: query references itself to handle hierarchical data. Syntax: WITH RECURSIVE cte AS (base_query UNION ALL recursive_query) SELECT * FROM cte. Base query: starting point. Recursive query: references CTE, adds more rows. Example organizational hierarchy: WITH RECURSIVE emp_hierarchy AS (SELECT employee_id, manager_id, name FROM employees WHERE manager_id IS NULL UNION ALL SELECT e.employee_id, e.manager_id, e.name FROM employees e JOIN emp_hierarchy eh ON e.manager_id = eh.employee_id) SELECT * FROM emp_hierarchy finds all employees and their managers (entire tree). Use cases: org charts, bill of materials, file systems, graph traversal. Termination: recursion stops when query returns no rows. Depth limit: prevent infinite loops. Example tree (A manages B, B manages C): would return 3 rows. Limitations: complex syntax, hard to debug, performance depends on depth. Alternative: application-level recursion. Modern databases support recursion well (PostgreSQL, MySQL 8+, SQL Server).",
+      "keywords": ["recursive", "cte", "hierarchy", "tree", "union", "management"],
+      "difficulty": "advanced",
+      "examples": ["WITH RECURSIVE org_chart AS (SELECT ...) UNION ALL SELECT ... ]"]
+    },
+    {
+      "id": 81,
+      "category": "Testing Database",
+      "question": "What is unit testing for database code and why is it important?",
+      "answer": "Database unit testing: test individual procedures, functions, queries in isolation. Benefits: catch bugs early, regression detection, confidence refactoring, documentation. Test types: input validation (invalid data rejected), output correctness (calculations accurate), constraint verification (constraints enforced), performance (queries fast). Frameworks: Catch (C++), NUnit/xUnit (.NET), pytest (Python), T-SQL Test (SQL Server). Example: test stored procedure calculate_salary() with various inputs. Mock/stub: isolate database from application. Test data: representative subset, edge cases, invalid values. Setup/teardown: create test database, populate data, clean after. Continuous integration: run tests on every commit. Coverage: all code paths tested. Challenges: test data management, environment setup, performance. CI/CD pipeline: build → test → deploy. Best practice: write tests alongside code, not after. Test-driven: write test first, implement to pass (TDD).",
+      "keywords": ["unit", "test", "database", "mock", "ci/cd", "regression"],
+      "difficulty": "intermediate",
+      "examples": ["Test stored procedure with multiple inputs", "Test constraints enforced"]
+    },
+    {
+      "id": 82,
+      "category": "Advanced SQL",
+      "question": "What is JSON support in SQL databases and how do I use it?",
+      "answer": "JSON: JavaScript Object Notation for storing documents in relational database. Benefits: flexible schema (no predefined columns), native query support. MySQL/PostgreSQL JSON functions: JSON_EXTRACT() gets values, JSON_SET() modifies, JSON_ARRAY() creates array. Example: user table with JSON preferences column {\"theme\": \"dark\", \"language\": \"en\"}. Query: SELECT JSON_EXTRACT(preferences, '$.theme') FROM users gets theme. Storage: JSON column stores text efficiently indexed. Validation: JSON_VALID() checks format. JSONB (PostgreSQL): binary format, faster, better indexing. Use cases: loosely structured data, configuration storage, embedded documents, versioning. Performance: slower than normal columns, use normal columns for frequent queries. Integration with NoSQL: feel of document DB in relational DB. Example: E-commerce product table with variable attributes (dimensions, specs) in JSON. Combining: relational + JSON hybrid approaches.",
+      "keywords": ["json", "jsonb", "extract", "flexible", "document", "schema"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT JSON_EXTRACT(config, '$.setting') FROM users", "JSONB in PostgreSQL"]
+    },
+    {
+      "id": 83,
+      "category": "Database Optimization",
+      "question": "What is query profiling and analysis tools?",
+      "answer": "Query profiling: measure query execution details (timing, reads, resource use). Tools: EXPLAIN (shows plan), EXPLAIN ANALYZE (includes actual stats), profilers collect metrics. Metrics: execution time, rows examined, rows returned, CPU, memory, I/O. Bottlenecks: full table scans (add index), many sorts (memory pressure), network round-trips. EXPLAIN output: sequential scan (slow), bitmap scan, index scan, nested loops. Cost estimate: comparing query plans. Actual vs estimated: debugging optimizer issues. Profilers: MySQL Workbench (visual EXPLAIN), PostgreSQL EXPLAIN ANALYZE, SQL Profiler. Slow query log: captures long-running queries for analysis. APM tools: New Relic, Datadog capture real-world performance. Optimization tips: adding index shows in plan, removing unnecessary columns, better JOINs. Baseline: establish normal performance detecting anomalies. Regular profiling: part of maintenance and optimization cycle.",
+      "keywords": ["profile", "explain", "analyze", "bottleneck", "optimization", "metrics"],
+      "difficulty": "intermediate",
+      "examples": ["EXPLAIN SELECT * FROM users WHERE id=5", "EXPLAIN ANALYZE query results"]
+    },
+    {
+      "id": 84,
+      "category": "Database Security",
+      "question": "What is row-level security and column-level security?",
+      "answer": "Row-level security (RLS): filter rows based on user context. Example: sales person sees only their region's data. Implementation: automatic WHERE clause applied based on user. Setup: policy defines predicates. Benefit: simple for application (no WHERE coding), consistent enforcement. Column-level security: restrict columns based on role. Example: column HR_SALARY visible only to HR. Setup: permissions grant/deny individual columns. Combined: user X in sales region Y sees only that region's non-salary data. Application: financial systems (salary hidden), multi-tenant (data isolation), GDPR compliance. Performance: WHERE clause optimization, index advantage. Challenges: performance impact (additional filters), complexity, exceptions. Database support: PostgreSQL, SQL Server, Oracle (various implementations). Testing: verify access works correctly across roles. Monitoring: audit data access.",
+      "keywords": ["row", "level", "security", "column", "policy", "context"],
+      "difficulty": "advanced",
+      "examples": ["Row-level: salesperson sees only their region", "Column-level: salary visible to HR only"]
+    },
+    {
+      "id": 85,
+      "category": "Advanced SQL",
+      "question": "What are database triggers and when to use them?",
+      "answer": "Trigger: code automatically executed by event (INSERT, UPDATE, DELETE). Before trigger: executes before event (validate, prevent). After trigger: executes after event (cascade updates, audit). Row-level: fires per affected row. Statement-level: fires once per statement. Use cases: enforce complex constraints, maintain derived data, audit trails, cascading updates, prevent invalid data. Example: UPDATE trigger on salary column calculates bonus percentage. Audit trigger: records who changed what data, when. Risks: hidden logic (hard to debug), performance impact, complex dependencies. Best practice: use constraints for simple rules, triggers for complex logic. Disadvantages: trigger spaghetti (many interdependent triggers confusing), debugging difficulty. Testing: trigger logic hard to test in isolation. Performance: every INSERT/UPDATE runs triggers (overhead). Maintenance burden: document trigger purposes. When good: audit requirements, complex rules, data integrity. When bad: simple validation (use constraints), simple data transformation (application layer).",
+      "keywords": ["trigger", "event", "fired", "before", "after", "audit"],
+      "difficulty": "advanced",
+      "examples": ["CREATE TRIGGER update_timestamp BEFORE UPDATE ON users", "Audit trigger logs changes"]
+    },
+    {
+      "id": 86,
+      "category": "Performance Tuning",
+      "question": "What is statistics and how does it affect query optimization?",
+      "answer": "Statistics: metadata about data distribution (values, frequency, NULL percentage). Optimizer uses statistics to choose best query plan. Accurate statistics: better execution plans. Stale statistics: poor plans, slow queries. Statistics types: table statistics (row count, page count), column statistics (distinct values, distribution), index statistics. Commands: ANALYZE TABLE (MySQL), ANALYZE (PostgreSQL), UPDATE STATISTICS (SQL Server). Histogram: value distribution helps optimizer. Example: filtered by day_of_week='Monday' - if Monday only 1% optimizes differently than evenly distributed. Auto update: many databases auto-update stats, risk stale if disabled. Manual: after large bulk loads refresh stats. Monitoring: check statistics age, stale warnings. Execution plan issues: might indicate stale stats. Rebuilding: drop/recreate stats. Partitioned tables: update partition statistics. Performance: stats maintenance overhead vs query plan improvement (pays off).",
+      "keywords": ["statistics", "optimize", "distribution", "histogram", "analyze", "stale"],
+      "difficulty": "advanced",
+      "examples": ["ANALYZE TABLE users;", "UPDATE STATISTICS employees;"]
+    },
+    {
+      "id": 87,
+      "category": "Data Migration",
+      "question": "What is database migration strategy and best practices?",
+      "answer": "Migration: moving data from source to target system. Types: schema changes (same system), data sync (same schema), full replacement (new system). Strategy: choose timing, approach (big bang vs phased), rollback plan. Big bang: single cutover (fast, risky). Phased: gradual migration (slower, safer). Parallel: run both systems simultaneously (costly, safe data sync). Validation: verify data integrity after migration. Testing: must test migration multiple times. Challenges: downtime, data loss, incompatibilities, performance, complex relationships. Tools: AWS DMS, custom ETL, database vendors' tools. Steps: extract source, transform (if necessary), validate, load target, verify. Rollback: quick rollback plan if issues. Schedule: off-hours, low-traffic time. Notification: inform users, manage expectations. Post-migration: performance tuning, monitoring. Incremental: smaller pieces less risky. Data sync: dual-write to ensure both systems consistent during transition.",
+      "keywords": ["migration", "strategy", "cutover", "phased", "validation", "rollback"],
+      "difficulty": "advanced",
+      "examples": ["Big bang: single cutover", "Phased: gradual data migration", "Parallel: both systems running"]
+    },
+    {
+      "id": 88,
+      "category": "Data Storage",
+      "question": "What is BLOB/CLOB storage and when to use it?",
+      "answer": "BLOB: Binary Large Object (images, videos, files). CLOB: Character Large Object (large text). Benefits: keep data organized. Disadvantages: slow, difficult backup, duplication across replicas. Alternatives: file system (OS handles) or object storage (S3). Best practice: store file path in database, actual file in storage. Example: user profile table stores avatar_path='s3://bucket/avatar123.jpg' not image bytes. Benefits of external storage: faster queries (small database), scalable (unlimited size), cheaper (object storage cheaper). Backup: easier (Lightweight changesets), faster (less data). Replication: minimal overhead. When to use BLOB: small data (<1MB), rarely accessed, integrated queries needed. When not to use: large files, frequently accessed, performance critical. Hybrid: metadata in database (filename, size, upload_date), data in storage. CDN: serve files from edge locations for speed. Versioning: track file changes.",
+      "keywords": ["blob", "clob", "file", "storage", "s3", "large"],
+      "difficulty": "intermediate",
+      "examples": ["Store avatar_path in DB, image in S3", "BLOB for small attachments"]
+    },
+    {
+      "id": 89,
+      "category": "Administration",
+      "question": "What is database server sizing and capacity planning?",
+      "answer": "Capacity planning: predict resource needs for future growth. Factors: data volume (storage), transaction rate (CPU), users (memory, connections), reports (I/O). Sizing: CPU cores, memory (RAM), disk (storage), bandwidth. Monitoring: baseline current usage, growth rate. Predictions: trend analysis + business projections. Headroom: 20-30% spare capacity recommended. Growth scenarios: 100% increase in data, 50% increase in users. Database size: row count × average row size. Example: 1M customers × 1KB = 1GB plus indexes/overhead estimate 3-5GB. Transaction throughput: queries/sec, determines CPU, I/O. Reporting: write-heavy needs separate warehouse. Cloud flexibility: auto-scaling adjusts without planning. On-premise: fixed capacity, plan conservatively (expensive to add later). Cost trade-offs: over-provision (waste), under-provision (performance issues). Monitoring tools: estimate future needs. Review regularly: adjust as needed.",
+      "keywords": ["capacity", "planning", "sizing", "growth", "resource", "projection"],
+      "difficulty": "intermediate",
+      "examples": ["Data growth: 100GB/month", "Estimate disk: 500GB needed in 1 year"]
+    },
+    {
+      "id": 90,
+      "category": "Advanced SQL",
+      "question": "What is full-text search and how does it differ from LIKE?",
+      "answer": "Full-text search: optimized text searching matching words/phrases. LIKE: pattern matching using wildcards (LIKE '%word%'). Performance: full-text indexes much faster (LIKE slow on large data). Features: word stemming (run, running match), phrase search (\"exact phrase\"), boolean operators (word1 AND NOT word2). Example: SELECT * FROM articles WHERE MATCH(content) AGAINST('+database -sql' IN BOOLEAN MODE) finds database articles without SQL. Language support: stop words (common words ignored), stemming rules (language-specific). Setup: CREATE FULLTEXT INDEX on column. Relevance ranking: results scored by relevance. Limitations: minimum word length (default 3 chars), stop word list. LIKE still useful: simple searches, non-text matching. Choice: full-text for text-heavy (documents), LIKE for simple (email wildcard search). Database support: MySQL, PostgreSQL, SQL Server (different syntax).",
+      "keywords": ["full-text", "search", "index", "match", "against", "like"],
+      "difficulty": "intermediate",
+      "examples": ["MATCH(content) AGAINST('database' IN BOOLEAN MODE)", "vs LIKE '%database%'"]
+    },
+    {
+      "id": 91,
+      "category": "Cloud Databases",
+      "question": "What is Amazon RDS and its advantages?",
+      "answer": "RDS: Relational Database Service - managed database by AWS. Supported engines: MySQL, PostgreSQL, Oracle, SQL Server, MariaDB. Advantages: no server management, automated backups, patches, failover, multi-AZ replication, read replicas. Multi-AZ: automatic failover to standby in different availability zone. Read replicas: scale read-heavy workloads (asynchronous), global distribution. Backup: automated daily, retained (configurable, default 7 days). Snapshots: point-in-time restore, manual/automatic. Monitoring: CloudWatch metrics (CPU, connections, I/O). Scaling: vertical (instance type), horizontal (read replicas). Costs: hourly pricing, storage, data transfer. Aurora: AWS's MySQL/PostgreSQL compatible (serverless scaling, distributed). Example: read replicas in different regions for global application. Disadvantages: less control than self-managed, vendor lock-in. Best for: managed database needs, high availability critical, avoid ops burden.",
+      "keywords": ["rds", "aws", "managed", "replica", "multi-az", "backup"],
+      "difficulty": "intermediate",
+      "examples": ["RDS MySQL with read replicas", "Multi-AZ for automatic failover"]
+    },
+    {
+      "id": 92,
+      "category": "Cloud Databases",
+      "question": "What is Google Cloud SQL and Azure SQL Database?",
+      "answer": "Cloud SQL: Google's managed database (MySQL, PostgreSQL, SQL Server). Azure SQL: Microsoft's managed database (SQL Server compatible, Azure Synapse). Similarities: RDS-like managed services, automation, scaling, backups, HA. Cloud SQL features: automatic backups, point-in-time recovery, replicas, Cloud SQL Auth (no public IP), high availability (multiple zones). Azure SQL features: built-in intelligence (auto-tuning), threat detection, always encrypted, geo-replication. Pricing: instance type, storage (both hourly). Scaling: vertical (more resources), horizontal (read replicas). Integration: Cloud SQL integates GCP services (Compute Engine, App Engine). Azure SQL integrates Azure services (VMs, App Service, Functions). Choice factors: existing cloud vendor, feature needs, cost comparison. Migration: Google/Microsoft tools for moving from on-premise. Serverless options: Aurora Serverless (AWS), Azure SQL Serverless (Microsoft).",
+      "keywords": ["cloud", "sql", "azure", "google", "managed", "database"],
+      "difficulty": "intermediate",
+      "examples": ["Google Cloud SQL PostgreSQL", "Azure SQL Database geo-replication"]
+    },
+    {
+      "id": 93,
+      "category": "NoSQL",
+      "question": "What is MongoDB and document databases?",
+      "answer": "MongoDB: NoSQL document database storing JSON-like BSON documents. Advantages: flexible schema (no predefined), scalable (sharding), fast development (schema-free). Collections: MongoDB's tables (contains documents). Documents: JSON objects with fields/values. Query: db.users.find({age: {$gt: 25}}) finds users over 25. Indexing: single field, compound, geospatial indexes improve query speed. Replication: replica sets (primary + secondaries) for HA. Sharding: distribute data across multiple machines (horizontal scaling). Aggregation: pipeline processing (similar SQL GROUP BY). Transactions: multi-document ACID transactions (version 4+). Disadvantages: large document sizes, complex queries less optimized, no JOINs (denormalize data). Use cases: content management, mobile apps, real-time analytics, flexible data types. vs SQL: MongoDB denormalize data, SQL normalize. Example: user document contains addresses array (NoSQL), vs separate addresses table (SQL). MongoDB Atlas: managed MongoDB cloud service (similar RDS).",
+      "keywords": ["mongodb", "document", "nosql", "bson", "collection", "schema"],
+      "difficulty": "intermediate",
+      "examples": ["db.users.find({age: {$gt: 25}})", "Sharded cluster for scale"]
+    },
+    {
+      "id": 94,
+      "category": "Data Engineering",
+      "question": "What is Apache Spark and distributed data processing?",
+      "answer": "Spark: distributed computing framework processing large datasets. Uses: big data analysis, machine learning, batch/streaming. Architecture: driver (controls), executors (run tasks) across cluster nodes. RDDs: Resilient Distributed Datasets - immutable, fault-tolerant. DataFrames: structured RDDs (like tables), faster (optimizations). SQL: Spark SQL queries DataFrames with SQL syntax. Example: df.groupBy('region').agg({'sales': 'sum'}) aggregates sales by region across cluster. Streaming: Spark Streaming processes real-time data (micro-batches). MLlib: machine learning library (clustering, classification). Performance: in-memory processing (faster than Hadoop). Languages: Python (PySpark), Scala, Java, SQL. Scala: cluster management (Spark standalone, YARN, Kubernetes). Use cases: ETL pipelines, real-time analytics, model training. vs MapReduce: Spark faster (memory vs disk), easier to use. Learning: start with DataFrames/SQL, familiar for SQL developers.",
+      "keywords": ["spark", "distributed", "dataframe", "rdd", "cluster", "processing"],
+      "difficulty": "advanced",
+      "examples": ["PySpark: df.groupBy('region').count()", "Streaming micro-batches"]
+    },
+    {
+      "id": 95,
+      "category": "Data Warehouse",
+      "question": "What is Snowflake data warehouse?",
+      "answer": "Snowflake: cloud-native data warehouse (SQL engine). Architecture: separate compute (query processing) and storage (data files S3). Benefits: independent scaling, fast querying despite storage size, near-zero administration. Pricing: compute credits per query (pay-per-use), storage capacity. Shared data: secure data sharing between organizations without copying. Cloning: metadata cloning (instant, no extra storage) for development/testing. Time travel: query historical data (before DELETE/UPDATE). Autoscaling: query complexity automatically scales compute. Performance: columnar storage, compression, distribution. Partitioning: automatic clustering improves query speed. Zero-copy cloning: lightweight environment for testing. Security: encryption, RBAC, data masking. SQL: standard SQL syntax (PostgreSQL-compatible). Example: 1TB dataset, single query uses compute (seconds), scales down when idle. vs traditional DW: lower cost (no server management), instant scaling.",
+      "keywords": ["snowflake", "warehouse", "cloud", "scaling", "shared", "time-travel"],
+      "difficulty": "advanced",
+      "examples": ["SELECT SUM(revenue) FROM sales; (auto-scales compute)", "Time travel: SELECT * FROM table BEFORE(DATE => '2024-01-01')"]
+    },
+    {
+      "id": 96,
+      "category": "Data Warehouse",
+      "question": "What is Amazon Redshift and analytical databases?",
+      "answer": "Redshift: AWS data warehouse optimized for OLAP queries. Columnar storage: compress, query only needed columns (faster). Massively parallel processing: queries distributed across cluster nodes. Architecture: leader (coordinates), compute nodes (process in parallel). Clusters: combine nodes, scale horizontally. Sorting: choose sort key (orders by) improves range queries. Distribution: choose distribution key (how data distributed across nodes) affects JOIN performance. Costs: hourly per node, storage. Performance: COPY command for fast bulk loads, vacuum to reclaim space. Limitations: not for real-time (batch oriented), lacks some SQL functions). Integration: AWS ecosystem (S3 staging, Lambda triggers, QuickSight visualization). Spectrum: query directly from S3 (no COPY needed, slower). vs Snowflake: Redshift more configuration, Snowflake more serverless. Setup: define tables, copy data from S3, query. Example: analyze 10 years sales data in seconds.",
+      "keywords": ["redshift", "warehouse", "columnar", "mpp", "analytical", "cluster"],
+      "difficulty": "advanced",
+      "examples": ["COPY sales FROM 's3://bucket/data.csv'", "Huge OLAP queries on TB data"]
+    },
+    {
+      "id": 97,
+      "category": "Database Design",
+      "question": "What is database refactoring and legacy system modernization?",
+      "answer": "Refactoring: restructure database without changing external behavior. Goals: improve performance, maintainability, flexibility, reduce complexity. Examples: add index, denormalize for speed, split table, change data types. Challenges: preserve data, test thoroughly, zero-downtime if possible. Testing: unit tests (individual changes), integration tests (whole system), performance benchmarks. Versioning: track schema changes, enable rollback. Tools: database migration tools, custom scripts. Legacy modernization: update outdated systems (technology, process). Strategy: strangler pattern (gradually replace with new), parallel systems (coexist), big bang (complete replacement). Challenges: backward compatibility, massive data volumes, understanding old code. Data migration: validate mapping, handle discrepancies. Gradual: less risk, longer timeline. Fast: high risk, quick payoff. Real-world: often combination (phased modernization). Documentation: understand before refactoring (existing system rationale).",
+      "keywords": ["refactor", "legacy", "modernize", "schema", "change", "migration"],
+      "difficulty": "advanced",
+      "examples": ["Add index for slow query", "Denormalize for reporting performance"]
+    },
+    {
+      "id": 98,
+      "category": "Advanced SQL",
+      "question": "What is query hints and optimizer directives?",
+      "answer": "Query hints: directives telling optimizer how to execute query. Purpose: override optimizer's decision when hint better. Types: index hints (use specific index), JOIN hints (JOIN order), cost hints. Syntax varies: MySQL /*+ HINT */ , SQL Server (OPTION (...)), PostgreSQL (less common, comments). Example: SELECT /*+ INDEX(users,idx_email) */ * FROM users WHERE email='user@example.com' forces index use. Disadvantages: brittle (index dropped, hint ignored), wrong hints slow queries, maintenance burden. When to use: when optimizer wrong, after analysis proves choice better. When not to use: first solution (analyze first), automatic tuning preferred. Better alternatives: update statistics (hints no longer needed), rewrite query differently, add index. Monitoring: compare with/without hints (performance test). Optimizer learning: modern optimizers improve (less need for hints). Best practice: use hints sparingly, document reason, test thoroughly.",
+      "keywords": ["hint", "optimizer", "directive", "index", "force", "override"],
+      "difficulty": "advanced",
+      "examples": ["SELECT /*+ INDEX(users,idx_email) */", "FORCE INDEX in MySQL"]
+    },
+    {
+      "id": 99,
+      "category": "Information Systems",
+      "question": "What is data lineage and impact analysis?",
+      "answer": "Data lineage: trace data path from source to destination. Tracks: ETL transformations, column dependencies, calculations. Example: sales report uses order table (daily ETL), order table from CRM (hourly sync), CRM from sales system. Benefits: understand data source, debug errors (wrong value trace back), compliance (show data usage), impact analysis (change effect). Impact analysis: how does change impact downstream? Example: change customer master name field affects 20 reports, 5 databases. Tools: automated lineage (some BI tools), manual documentation, custom tracking. Challenges: complex systems (many dependencies), dynamic queries (code-generated SQL), legacy systems (undocumented). Implementation: code scanning, query parsing, metadata management. Documentation: visual diagrams (upstream dependencies). Data governance: critical for GDPR/privacy (know where data goes). Real-world: customer data request (show all systems using customer data).",
+      "keywords": ["lineage", "impact", "analysis", "trace", "dependency", "source"],
+      "difficulty": "advanced",
+      "examples": ["Sales report lineage: CRM → Order table → Report", "Change customer table impacts 20 reports"]
+    },
+    {
+      "id": 100,
+      "category": "Database Administration",
+      "question": "What is disaster recovery and business continuity planning?",
+      "answer": "Disaster recovery (DR): recover from catastrophic failure (data center down, corruption). Business continuity (BC): maintain operations during disruption. RPO: Recovery Point Objective (max data loss acceptable). RTO: Recovery Time Objective (max downtime acceptable). Strategies: backup (restore from copy, slow), replication (standby ready, fast), clustering (HA system), multi-region (geographic distribution). Backup: daily (incremental/full), offsite storage, test restore regularly. Replication: synchronous (slow but safe), asynchronous (fast, small loss risk). Testing: disaster recovery drill (pretend failure, test recovery). Plan: document procedures, responsibilities, contacts, runbooks. Failover: automatic (DNS switch) or manual (switch systems). Cost trade-off: higher RPO/RTO (cheaper), lower RPO/RTO (expensive). Example: 4-hour RTO (down 4 hrs max), 1-hour RPO (lose 1 hr data at most). Compliance: required in regulated industries (finance, healthcare). Cloud: multi-region by default easy.",
+      "keywords": ["disaster", "recovery", "continuity", "backup", "rpo", "rto"],
+      "difficulty": "advanced",
+      "examples": ["Backup to offsite storage", "Replication to standby server"]
+    },
+    {
+      "id": 101,
+      "category": "Advanced SQL",
+      "question": "What is analytical functions and time-series queries?",
+      "answer": "Analytical functions: compute values over rows (time-series analysis). SUM OVER: cumulative sum. Example: cumulative_sales = SUM(sales) OVER (ORDER BY date). Moving average: smooth data. Example: 7-day moving average of daily sales. LAG/LEAD: access previous/next row. Example: yesterday_sales = LAG(sales) OVER (ORDER BY date). Use cases: trend analysis, anomaly detection, performance tracking. Example: detect month with 30% sales drop (compare to previous). Rate of change: percentage increase month-over-month. Cumulative: running total over time. Window specification: PARTITION BY (groups), ORDER BY (sequence). Example: SUM(sales) OVER (PARTITION BY customer ORDER BY date) cumulative per customer. Time-series: many analytical functions applied. Visualization: graphs show trends clearly. Real-world: stock analysis (moving average), sales trends, performance metrics.",
+      "keywords": ["analytical", "window", "time-series", "lag", "lead", "moving"],
+      "difficulty": "advanced",
+      "examples": ["SUM(sales) OVER (ORDER BY date)", "Moving average: AVG(sales) OVER (ORDER BY date ROWS BETWEEN 7 PRECEDING AND CURRENT ROW)"]
+    },
+    {
+      "id": 102,
+      "category": "Database Design",
+      "question": "What is surrogate keys vs natural keys?",
+      "answer": "Surrogate key: artificial unique identifier (auto-increment ID). Example: user_id=1,2,3... Natural key: unique business identifier. Example: email (unique per user), product_code (unique per product). Surrogate advantages: small (integer vs email), stable (don't change), simple, performance. Surrogate disadvantages: meaning-less (requires lookup for business sense). Natural advantages: meaningful (business value), no extra column. Natural disadvantages: might change (employee_id changed), might be composite (multiple columns), larger (slower). Best practice: surrogate primary key + natural unique constraint. Example: table users(user_id PRIMARY KEY, email UNIQUE NOT NULL). Referential integrity: surrogate (small) better for foreign keys. Lookup: surrogate requires table join for display. ETL: surrogate key lookup (user_id → email mapping). Data quality: business logic often enforces natural uniqueness. Choice: usually surrogate (simplicity), keep natural constraint (data integrity).",
+      "keywords": ["surrogate", "natural", "key", "identifier", "unique", "primary"],
+      "difficulty": "intermediate",
+      "examples": ["Surrogate: user_id (1,2,3)", "Natural: email,product_code"]
+    },
+    {
+      "id": 103,
+      "category": "Data Engineering",
+      "question": "What is Apache Kafka and event streaming?",
+      "answer": "Kafka: distributed event streaming platform. Use: real-time data pipelines, event sourcing, log aggregation. Architecture: brokers (servers), topics (event categories), producers (write events), consumers (read events). Topics: like queues but persistent (log-based). Partitions: topic divided, events keyed (same key same partition). Orders: guaranteed within partition, not across partitions. Consumer groups: multiple consumers share partitions (parallel processing). Replication: brokers replicate topics (high availability). Offsets: consumers track position (can re-read). Example: user-click events (producers), analytics (consumer1), recommendation engine (consumer2) - both read same stream. Use cases: real-time analytics, microservice communication, stream processing (with Spark Streaming). Durability: events persisted (days/weeks), can replay. Performance: billions events/day. Integration: with Spark, Flink, databases. Setup: deploy brokers, create topics, build producers/consumers. Learning: simple API, powerful for distributed systems.",
+      "keywords": ["kafka", "streaming", "event", "topic", "partition", "consumer"],
+      "difficulty": "advanced",
+      "examples": ["Kafka topic: user-events", "Consumer group: analytics-group reads partition"]
+    },
+    {
+      "id": 104,
+      "category": "Information Systems",
+      "question": "What is API design for database systems?",
+      "answer": "API: Application Programming Interface - expose database capabilities to clients. RESTful API: HTTP endpoints (GET/POST/PUT/DELETE) accessing resources. GraphQL: query language (get exactly needed fields, reduce over-fetching). Example REST: GET /users/123 returns user, POST /users creates new user. Example GraphQL: query { user(id: 123) { name, email } } returns only name+email. Benefits: abstraction (hide DB implementation), reusability (multiple clients), versioning (API changes managed). Concerns: performance (optimize queries), security (authentication, authorization), rate limiting (prevent abuse). N+1 problem: separate query per record (slow) vs batch query. Solution: JOIN (fewer queries), DataLoader pattern (batch). Caching: API responses cached (faster retrieval). Pagination: large results split pages. Filtering/Sorting: API accepts parameters. Documentation: OpenAPI/Swagger auto-documents API. Example: REST API often 20-30% overhead vs direct DB, worth for maintainability.",
+      "keywords": ["api", "rest", "graphql", "endpoint", "resource", "query"],
+      "difficulty": "intermediate",
+      "examples": ["REST: GET /sales/2024", "GraphQL: query { sales { id, amount, date } }"]
+    },
+    {
+      "id": 105,
+      "category": "Database Architecture",
+      "question": "What is CQRS pattern and event sourcing?",
+      "answer": "CQRS: Command Query Responsibility Segregation - separate write (command) from read (query) models. Motivation: writes optimization different than reads. Write model: normalized (writing efficient). Read model: denormalized (reading efficient). Sync: writes update read model immediately/async. Benefits: independent scaling (reads scale separately), optimization (each optimized), separate DB (reads from warehouse). Example: order creation (write) → inventory update (command) → order list (read model). Event sourcing: store all changes as events (immutable log). Query: reconstruct state from events. Benefits: audit trail, temporal queries (state at any time), recovery (replay events). Challenges: complexity, testing difficulty, eventual consistency (read lag). Real-world: e-commerce (order events: created, confirmed, shipped), banking (transaction events). CQRS + Event sourcing: powerful combination (separate models + auditable). Tools: event stores, message queues, eventually-consistent databases.",
+      "keywords": ["cqrs", "event", "sourcing", "command", "query", "model"],
+      "difficulty": "advanced",
+      "examples": ["Command: CreateOrder", "Query: OrderList from read model"]
+    },
+    {
+      "id": 106,
+      "category": "Database Security",
+      "question": "What is encryption at rest and in transit?",
+      "answer": "Encryption at rest: encrypt data stored in database. Purpose: protect if database server compromised. Method: database encryption (transparent, automatic), column-level (encrypt specific columns), file-level (OS encryption). Tools: TDE (Transparent Data Encryption) SQL Server/Oracle, encryption functions. Keys: managed by database (automatic) or customer (manual key management). Performance: slight overhead (decryption on query). Compliance: HIPAA/PCI requires at-rest encryption. Encryption in transit: encrypt data traveling network. Method: SSL/TLS protocol (standard). Example: connect to database: Server=localhost;Encrypt=true;TrustServerCertificate=false; SSL certificate: verify server authenticity. Use: all network traffic (even internal corporate). Both needed: someone with DB file can't read (at-rest), eavesdropping prevented (in-transit). Key management: secure key storage, rotation, access control. Disadvantages: minimal with modern hardware (encryption fast). Best practice: both (defense in depth).",
+      "keywords": ["encryption", "rest", "transit", "tls", "ssl", "key"],
+      "difficulty": "advanced",
+      "examples": ["TDE: transparent database encryption", "Connect with Encrypt=true;"]
+    },
+    {
+      "id": 107,
+      "category": "Data Engineering",
+      "question": "What is dbt (data build tool) and data transformation?",
+      "answer": "dbt: data build tool - transforms raw data into analytics data. Workflow: extract (EL) from source → load into warehouse → dbt transforms (T) → ready for analysis. SQL-based: write SQL queries, dbt orchestrates. Project structure: models (SQL files), tests, documentation. Benefits: version control (SQL in Git), testing (data quality), documentation (generated), CI/CD (test on change). Example: raw_orders table → dim_orders table (cleaned, aggregated). DAG: dbt builds dependency graph (T1 → T2 → T3 order). Testing: dbt tests data quality (unique, not null, custom). Documentation: auto-generates from SQL comments. Integration: various data warehouses (Snowflake, Redshift, BigQuery). Advantages vs traditional ETL: simpler (SQL vs complex tools), modern (version control), collaborative (teamwork). Disadvantages: team must know SQL, complex transformations need custom code (dbt macros). Learning curve: SQL-focused easier for analytics teams.",
+      "keywords": ["dbt", "transform", "sql", "testing", "documentation", "warehouse"],
+      "difficulty": "intermediate",
+      "examples": ["dbt model: raw_orders → cleaned_orders", "dbt test: assert unique(order_id)"]
+    },
+    {
+      "id": 108,
+      "category": "Advanced SQL",
+      "question": "What is SQL optimization with execution plan analysis?",
+      "answer": "Execution plan: how database executes query (step-by-step). EXPLAIN: shows planned execution (estimated). EXPLAIN ANALYZE: shows actual execution (real metrics). Metrics: execution time, rows processed, cost estimate. Operations: sequential scan (slow), index scan (fast if matches), bitmap scan (multiple indexes). JOIN types: nested loops, hash join, merge join. Nested loop: good small inner table. Hash: best for equal joins. Merge: sorted data. Bottlenecks: full table scans (add index), nested loops (rewrite), high row counts (filter/limit). Optimization: add indexes matching WHERE clause, improve JOINs order, reduce columns selected, limit rows. Example: EXPLAIN SELECT * FROM orders WHERE date='2024-01-01'; might show full scan → add index on date. Cost: lower number better. Actual > estimated: stats stale (refresh). Indexes help: fast data access (but write overhead). Monitoring: slow query log captures queries affecting users.",
+      "keywords": ["execution", "plan", "optimize", "explain", "cost", "scan"],
+      "difficulty": "intermediate",
+      "examples": ["EXPLAIN SELECT * FROM orders WHERE date='2024-01-01'", "Index on date column speeds up"]
+    },
+    {
+      "id": 109,
+      "category": "Database Design",
+      "question": "What is schema versioning and migration management?",
+      "answer": "Schema versioning: track database structure changes over time. Versions: 1.0 → 1.1 → 1.2 (add column) → 2.0 (major change). Versioning approaches: timestamp (001_add_users.sql), semantic (v1.1), naming (meaningful description). Migration tools: Liquibase, Flyway (compare SQL Server vs MySQL), Alembic (Python). Workflow: develop migration (SQL file), test locally, apply to staging, apply to production. Rollback: revert to previous version (undo migration). Challenges: production downtime (zero-downtime strategies), large tables (slow migration), compatibility (old code with new schema). Zero-downtime: add column with default (backward compatible), gradual migration (dual-write phase). Automation: CI/CD pipeline (test migrations on every commit). Versioning database: keeps with application version. Example: deploy app v2.0 includes migration v2.0. Documentation: why change (comment in migration). Testing: test migration with data (not just syntax).",
+      "keywords": ["migration", "versioning", "schema", "change", "deployment", "rollback"],
+      "difficulty": "advanced",
+      "examples": ["Migration: 001_create_users_table.sql", "Flyway applies migrations in order"]
+    },
+    {
+      "id": 110,
+      "category": "Information Systems",
+      "question": "What is data governance framework and policies?",
+      "answer": "Data governance: manage data assets, quality, security, compliance. Framework: policies, procedures, roles, tools. Components: data quality (accuracy), security (privacy), compliance (regulations), master data (single source). Roles: chief data officer (CDO oversees strategy), data steward (own data), data quality team (monitors), governance council (decisions). Policies: acceptable use (who accesses), retention (how long keep), classification (sensitivity levels). Metadata: centralize information about data (catalog). Data lineage: understand data source/destination. Quality metrics: accuracy, completeness, timeliness, consistency. Compliance: GDPR (consent, right to delete), HIPAA (patient data protected), PCI (payment data). Regulations: different by region (stringent compliance needed). Challenges: organizational change (resistance), cost, complexity. Tools: Collibra, Alation (metadata management), Apache Atlas. Benefits: reduced risk, better decisions, faster compliance audits. Real-world: customer data request (show all systems using, delete from all).",
+      "keywords": ["governance", "policy", "compliance", "metadata", "quality", "steward"],
+      "difficulty": "advanced",
+      "examples": ["Data classification: public, internal, confidential", "Retention: keep 7 years"]
+    },
+    {
+      "id": 111,
+      "category": "Distributed Databases",
+      "question": "What is distributed database and consistency models?",
+      "answer": "Distributed database: data spread across multiple servers. Motivation: scalability (handle more data/users), availability (if one fails, others work). Consistency: all nodes see same data. Models: strong (immediately consistent, slow), eventual (eventually consistent, fast). Strong consistency: ACID transactions (complex coordination). Eventual consistency: BASE (basic available, soft state, eventually consistent) - fast but temporary inconsistency. CAP theorem: choose 2 of 3 (consistency, availability, partition-tolerance). Example: during network partition, choose availability (serve stale) or consistency (refuse). Trade-offs: consistency vs performance. Replication: synchronous (slow but safe), asynchronous (fast, risk data loss). Split-brain: two independent groups (conflict resolution needed). Vector clocks: track causality (which event happened first). Real-world: database sometimes unavailable vs stale data. Solutions: quorums (majority agrees), consensus (Raft algorithm).",
+      "keywords": ["distributed", "consistency", "replication", "partition", "cap", "eventual"],
+      "difficulty": "advanced",
+      "examples": ["Eventual consistency: accept stale data", "Strong: all nodes agree before confirming"]
+    },
+    {
+      "id": 112,
+      "category": "Distributed Databases",
+      "question": "What is sharding and horizontal scaling?",
+      "answer": "Sharding: partition data across database instances (horizontal scaling). Motivation: single database bottleneck (storage, CPU). Sharding key: determines which shard (user_id modulo 10 → shard 0-9). Types: range sharding (user_id 1-1000000 shard1), list (region=US shard1), hash (modulo formula). Benefits: scale to any size, parallel queries. Challenges: uneven distribution (hot shard), resharding (growing), JOIN across shards. Hot shard: some shards more queries (bad distribution). Resharding: change partition when growing (expensive operation). Cross-shard query: query all shards, combine (slow). Smart routing: application knows shard mapping (fast). Consistency: transactions harder across shards (eventual consistency). Example: 1M users → shard by user ID (user 1→shard 1, user 2→shard 2). Lookup: customer ID mod 10 = shard number. Middleware: proxy layer (HBase, Cassandra) handles sharding.",
+      "keywords": ["sharding", "horizontal", "scaling", "partition", "key", "shard"],
+      "difficulty": "advanced",
+      "examples": ["Shard by user_id % 10", "Resharding as data grows"]
+    },
+    {
+      "id": 113,
+      "category": "Data Lakes",
+      "question": "What is data lake and data swamp?",
+      "answer": "Data lake: centralized repository storing all data types (structured, unstructured). Raw data: store data as-is (no transformation upfront). Advantages: flexible schema (no predefined), scalability (terabytes), cost (cheap storage). Examples: logs, images, videos, documents, sensor data. Schema-on-read: interpret data when querying (vs schema-on-write). Data swamp: data lake without governance (low-quality, undocumented). Prevention: catalog (metadata), lineage (track source), quality (validation), retention (cleanup). Tools: AWS Lake Formation, Azure Data Lake. Storage: S3 (AWS), ADLS (Azure), HDFS (on-premise). Organization: logical zones (raw, processed, curated). Real-world: enterprise data lake (all company data centralized). Challenges: data quality (garbage in, garbage out), discovery (what's available?), governance (who owns?). Metadata: critical (describe datasets), tagging (find easily). Retention: old data archival (cost). Modern: data lakehouse (lake + warehouse hybrid, both fast queries + flexible schema).",
+      "keywords": ["lake", "swamp", "raw", "data", "metadata", "governance"],
+      "difficulty": "advanced",
+      "examples": ["Data lake: S3 bucket with all company data", "Data swamp: undocumented, low quality"]
+    },
+    {
+      "id": 114,
+      "category": "Big Data",
+      "question": "What is Hadoop ecosystem and HDFS?",
+      "answer": "Hadoop: big data framework (distributed processing). HDFS: Hadoop Distributed File System - stores files across cluster. Architecture: NameNode (manages file system), DataNodes (store blocks). Blocks: files split into blocks (64MB or 128MB), replicated across nodes (default 3 copies). MapReduce: batch processing (map phase → shuffle → reduce phase). Advantages: fault-tolerant (lost node, data replicated elsewhere), scalable (add nodes). Disadvantages: slow (batch, not real-time), complex programming, high latency. Ecosystem: HBase (database), Hive (SQL), Spark (fast processing), Kafka (streaming). YARN: resource manager (share cluster resources). Failure recovery: lost TaskTracker → task re-run on another node. Cost: many cheap nodes vs expensive single server. Use cases: log analysis (petabytes), batch processing (overnight jobs), data warehouse (structured data). Modern: Spark replaced MapReduce (faster, easier). Learning: setup complex, steep learning curve.",
+      "keywords": ["hadoop", "hdfs", "mapreduce", "yarn", "distributed", "file"],
+      "difficulty": "advanced",
+      "examples": ["HDFS: file replicated 3 ways", "MapReduce: word count problem"]
+    },
+    {
+      "id": 115,
+      "category": "Monitoring",
+      "question": "What is logging, monitoring, and observability?",
+      "answer": "Logging: record events (application logs, database logs, system logs). Purpose: debug issues, audit trail, understand behavior. Levels: DEBUG (detailed), INFO (important), WARN (problems), ERROR (failures). Storage: log files, log aggregation (ELK stack, Splunk). Monitoring: track system health (CPU, memory, disk, latency). Alerts: threshold breached (CPU >80%) notify ops. Metrics: quantitative measurements. Observability: understand system state from outputs. Three pillars: logs (what happened), metrics (how many), traces (execution path). Example: slow query (log says what SQL, metric shows latency 5s, trace shows path through code). Tools: Prometheus (metrics), ELK (logs), Jaeger (traces). APM: application performance monitoring (combined view). Dashboards: visualize health. Alert fatigue: too many alerts (tune thresholds). Real-world: production issue (logs show error, metric shows when started, trace shows root cause). SLO: service level objective (99.9% uptime, <100ms latency).",
+      "keywords": ["logging", "monitoring", "observability", "metrics", "alert", "trace"],
+      "difficulty": "intermediate",
+      "examples": ["CPU >80% alert triggered", "10 second query latency metric"]
+    },
+    {
+      "id": 116,
+      "category": "Database Architecture",
+      "question": "What is database federation and multi-tenancy?",
+      "answer": "Federation: query multiple independent databases as one. Use: merging company databases (acquisition), scalability. Challenges: JOIN across systems (slow), consistency hard, network latency. Multi-tenancy: single system serves multiple customers. Architectures: row-level (same table, tenant column filters), schema-per-tenant (separate schema per customer), database-per-tenant (separate database). Row-level: cheap but complex (ensure rows not visible to other tenants). Schema: better isolation, medium cost. Database: best isolation, most expensive. Security: crucial (verify tenant access). Data isolation: no data leak between customers. Scaling: row-level harder (single database bottleneck). Example: SaaS product (single platform, multiple customers). Multi-tenancy challenges: customer-specific customization (costly), upgrades (affect all), performance isolation (one customer slow others). Monitoring: per-customer metrics (usage, cost). Billing: track per-tenant usage.",
+      "keywords": ["federation", "multi-tenant", "isolation", "row-level", "schema", "database"],
+      "difficulty": "advanced",
+      "examples": ["Multi-tenant: tenant_id column filters rows", "Database-per-tenant for SaaS"]
+    },
+    {
+      "id": 117,
+      "category": "Advanced SQL",
+      "question": "What is stored procedures and functions in SQL?",
+      "answer": "Stored procedure: SQL code executed in database. Benefits: faster (compiled), secure (no code exposure), reusability, reduced network trips. Parameters: IN (input), OUT (output), INOUT. Example: PROCEDURE UpdateSalary(IN emp_id INT, IN percentage DECIMAL) updates salary. Functions: return single value (used in queries). Procedures: can return multiple results, perform actions. CALL: execute procedure. Usage: automation (scheduled), complex transactions, ELT (extract-load-transform). Disadvantages: database-specific syntax (hard to port), debugging complexity, maintenance burden. Version control: stored in database (hard to version), generate from scripts. Triggers: automatic execution (INSERT/UPDATE triggers salary audit). Testing: unit test stored code. Performance: can be fast (compiled) but wrong logic negates benefit. Modern trend: less stored procedures (business logic in application), more in data transformation (dbt).",
+      "keywords": ["procedure", "function", "stored", "call", "parameter", "sql"],
+      "difficulty": "intermediate",
+      "examples": ["CREATE PROCEDURE UpdateSalary(IN emp_id, IN percent)", "CALL UpdateSalary(1, 10);"]
+    },
+    {
+      "id": 118,
+      "category": "Data Engineering",
+      "question": "What is incremental loading and change data capture?",
+      "answer": "Incremental loading: load only new/changed data (vs full reload). Efficiency: much faster (small data), reduced compute, network savings. Change Data Capture (CDC): track what changed. Methods: timestamp (updated_at column), logs (database transaction logs), query-based (SELECT changed since cursor). Timestamp approach: simple but misses deletes. Log-based: accurate, complex. Cursors: handle deletes, track position. Example: products table updated_at timestamp, nightly load only WHERE updated_at > last_run_time. Full loading: periodic (monthly), slow, unnecessary. Incremental: daily/hourly, efficient. Snapshots: capture state at point in time (SCD Type 2). CDC tools: Debezium (logs), application events (custom tracking). Real-world: data warehouse nightly ETL (millions rows, incremental <5 min vs full reload 30 min). Deletes tricky: identify deleted records (flag column vs missing rows). Cleanup: manage cursor state (don't lose position).",
+      "keywords": ["incremental", "loading", "cdc", "change", "capture", "timestamp"],
+      "difficulty": "advanced",
+      "examples": ["SELECT * FROM products WHERE updated_at > timestamp", "CDC tool Debezium"]
+    },
+    {
+      "id": 119,
+      "category": "Database Performance",
+      "question": "What is connection pooling and resource management?",
+      "answer": "Connection pooling: reuse database connections (don't create per request). Benefit: fast (new connection 100ms overhead), resource efficient (limited connections), scalable (handle many clients). Pool size: configured (default 10-100). Too small: queuing (users wait). Too large: database overload. Idle timeout: close unused connections (free resources). Example: web app, 1000 users but 10 connections to database (users reuse). Monitoring: connection utilization (how many active % of pool). Leaks: connections not returned (pool empties). HikariCP: popular Java pooling library. Connection string: pool parameters (max size, timeout). Application layer: typically handles pooling (JDBC, Sequelize). Database connection limits: configured (max connections per database). Stress test: measure pool adequacy. Starvation: if pool full, new requests wait (SLA impact). Thread safety: ensure thread-safe access to connection pool.",
+      "keywords": ["pooling", "connection", "resource", "reuse", "limit", "queue"],
+      "difficulty": "intermediate",
+      "examples": ["Pool size: 20 connections for 1000 users", "HikariCP max connections: 50"]
+    },
+    {
+      "id": 120,
+      "category": "Advanced SQL",
+      "question": "What is database normalization beyond 3NF?",
+      "answer": "Normalization: organize data eliminate redundancy. Forms: 1NF (atomic), 2NF (no partial dependency), 3NF (no transitive dependency), BCNF (stricter 3NF), 4NF (multivalued dependencies), 5NF (join dependencies). BCNF: candidate key determines all attributes (ensure every determinant is candidate key). 4NF: no non-trivial multivalued dependency (student course AND student hobby independent). 5NF: decompose where join doesn't lose information. Practical: most systems use 3NF (balance performance/normalization). Over-normalization: too many tables (complex joins). Under-normalization: redundancy (update anomalies). Example BCNF issue: professor → office + course (transitivity) should separate. Real-world: choose normalization level fitting needs. OLTP: higher normalization (consistency). OLAP: lower (denormalize for speed). Trade-off: consistency vs performance always present.",
+      "keywords": ["normalization", "bcnf", "normal", "form", "dependency", "anomaly"],
+      "difficulty": "advanced",
+      "examples": ["BCNF: all determinants are candidate keys", "3NF usually sufficient for OLTP"]
+    },
+    {
+      "id": 121,
+      "category": "Data Science",
+      "question": "What is database for machine learning and feature engineering?",
+      "answer": "Database role: store features (ML input variables), train/test data. Feature engineering: transform raw data into predictive features. Example: user_age + signup_date → days_as_customer (useful feature). Feature store: centralized repository of features (reuse across models). Benefits: consistency (same calculation everywhere), discovery (what features exist), versioning (track changes). Tools: Feast (open-source), Tecton, Databricks. Data preparation: clean data (missing values), transform (scaling, encoding), split (train/test). Data pipeline: database → feature calculation → model training. Features table: id, features (numerical), target (prediction). Scale: features (0-1 range), models perform better. Real-world: predict churn (features: months_active, spending, last_login_days). Train/test: 80/20 split (learn vs verify). Imbalanced data: more positives than negatives (techniques handle this). Monitoring: model performance decay (retrain if needed).",
+      "keywords": ["feature", "engineering", "machine", "learning", "store", "pipeline"],
+      "difficulty": "advanced",
+      "examples": ["Feature: days_since_signup", "Feature store: reuse across models"]
+    },
+    {
+      "id": 122,
+      "category": "Cloud Databases",
+      "question": "What is BigQuery and cloud-native analytics?",
+      "answer": "BigQuery: Google's serverless data warehouse (SQL queries on huge datasets). Advantages: zero operations (no servers), fast (parallel queries), cost (pay per byte scanned). Column-oriented: only read needed columns (cheaper, faster). Partitioning: by date (daily partitions), reduce scans. Clustering: physical arrangement improves query performance. Streaming: real-time inserts (STREAMING_BUFFER), queried immediately. Federated: query external data (Cloud Storage, Cloud SQL) as if local. Pricing: per TB scanned (not per query), cached results free. Example: query 1TB data $6 (compressed cheaper). Limitations: no UPDATE (immutable), complex transactions limited. Extensions: ML (in-warehouse machine learning), GIS (geographic). Integration: Looker (visualization), Dataflow (streaming). Competitors: Redshift (AWS), Synapse (Azure). Use cases: analytics (fast), exploration (iterative), real-time (streaming). Learning: SQL familiar, just execute queries (no configuration).",
+      "keywords": ["bigquery", "warehouse", "cloud", "analytics", "columnar", "serverless"],
+      "difficulty": "intermediate",
+      "examples": ["SELECT * FROM bigquery-public-data.wikipedia.pageviews", "Partition by date, cluster by country"]
+    },
+    {
+      "id": 123,
+      "category": "Database Design",
+      "question": "What is database versioning strategies and blue-green deployments?",
+      "answer": "Versioning: track database schema/data versions. Semantic: MAJOR.MINOR.PATCH (1.2.3). Migration files: version number (001, 002) indicating order. Blue-green: two production environments (one current, one new). Deployment: deploy to green (new), test, switch traffic blue→green. Rollback: if issues, switch back blue. Benefits: zero-downtime deployment, easy rollback, test in production environment. Implementation: DNS switch (blue.app.com → points to green), load balancer, database replication. Database blue-green: requires replication (two sync databases), migration runs on green, data sync. Challenges: state (both envs must match), scale (double infra cost), complexity. Canary: gradual rollout (5% traffic to green, increase slowly). Shadow: new code runs in parallel collect metrics, no user impact. Monitoring: compare green vs blue metrics (ensure no regression). Real-world: deploy SQL changes during low-traffic time (less disruption).",
+      "keywords": ["versioning", "deployment", "blue-green", "rollback", "canary", "shadow"],
+      "difficulty": "advanced",
+      "examples": ["Blue: current prod, Green: new release", "Switch DNS: blue → green"]
+    },
+    {
+      "id": 124,
+      "category": "Distributed Databases",
+      "question": "What is consensus algorithms and Raft?",
+      "answer": "Consensus: agreements among distributed nodes despite failures. Problem: single point of failure (one server down, system down). Solution: multiple servers (quorum decides). Raft: consensus algorithm. Roles: leader (coordinates), followers (replicate), candidates (elect new leader). Leader election: timeout, followers promote themselves if no leader. Log replication: leader sends changes, followers apply. Quorum: majority (3 servers: need 2 agree). Commitment: change committed after majority ack (safe from loss). Split-brain prevention: leader must have majority. Example: 3-server cluster, 1 down, 2 still quorum (decisions work). 2 servers, 1 down, no quorum (system unavailable). Benefits: works with network partitions, recovers from failures. Paxos: older algorithm (similar idea, complex). Modern databases: Raft commonly used (Etcd, Consul). Tuning: heartbeat timeout (fast election vs network traffic).",
+      "keywords": ["consensus", "raft", "leader", "quorum", "election", "replicate"],
+      "difficulty": "advanced",
+      "examples": ["3-server Raft: need 2 to commit", "Leader election on timeout"]
+    },
+    {
+      "id": 125,
+      "category": "Advanced SQL",
+      "question": "What is query caching and result memoization?",
+      "answer": "Query caching: store query results (avoid re-computation). Invalidation: cache invalidate when data changes. Simple caching: SELECT COUNT(*) returns same result → cache. Complexity: when to invalidate? (UPDATE user invalidates related caches). Cache-aside: application checks cache first, miss → query db → update cache. Write-through: write data → update cache → success. Write-behind: write cache → sync to database (risky, data loss if crash). Tools: Redis, Memcached (in-memory caches), application-level. Performance: in-memory 100x faster than disk. Drawbacks: stale data (cache lag), complexity (invalidation), cache stampede (multiple requests hit DB simultaneously). TTL: time-to-live (cache expires after duration). Monitoring: hit rate (% requests served from cache). Example: homepage query (expensive aggregation) cached hourly. Database query cache: MySQL query cache (deprecated, slow). Better: application caching (more control).",
+      "keywords": ["cache", "memoization", "invalidation", "redis", "ttl", "hit"],
+      "difficulty": "intermediate",
+      "examples": ["Redis: cache expensive query", "TTL: 1 hour cache expiration"]
+    },
+    {
+      "id": 126,
+      "category": "Information Systems",
+      "question": "What is blockchain databases and immutability?",
+      "answer": "Blockchain: distributed ledger (chain of blocks). Each block: previous hash + transactions + timestamp. Immutability: change old block → all following blocks invalid (detected). Consensus: network agrees on valid block. Benefits: tamper-evident (changes obvious), transparent (everyone sees), decentralized (no single authority). Use cases: financial (transactions), supply chain (audit trail), identity (credentials). Limitations: slow (consensus overhead), scalability (limited throughput), irreversible (can't delete data). Privacy: public blockchain (anyone reads), private blockchain (permissioned). Database alternative: append-only logs (immutable), verification audits. Real blockchain: Bitcoin (cryptocurrency), Ethereum (smart contracts). Enterprise: Hyperledger Fabric (private, fast). Vs traditional database: database has admin trust, blockchain trustless (network verifies). Cost: high infrastructure, complex. Best for: when immutability critical (legal, compliance), distrust between parties.",
+      "keywords": ["blockchain", "immutable", "ledger", "consensus", "hash", "trustless"],
+      "difficulty": "advanced",
+      "examples": ["Block chain: change old block invalidates rest", "Supply chain traceability"]
+    },
+    {
+      "id": 127,
+      "category": "Data Engineering",
+      "question": "What is data quality assessment and remediation?",
+      "answer": "Quality metrics: accuracy (correct values), completeness (no missing), consistency (uniform format), timeliness (current). Assessment: profile data (distinct values, nulls), compare to rule, report issues. Rules: email valid format, age between 18-120, required fields non-null. Automated: data quality tools (Great Expectations, Deequ). Manual: human review (sample data). Issues: duplicates (multiple same records), typos (spelling errors), inconsistency (different formats - 2024-01-01 vs Jan 1, 2024). Remediation: delete (remove invalid), update (correct errors), impute (fill missing), standardize (consistent format). Prevention: validation on input (reduce bad data), documentation (standards). Testing: data quality tests in pipeline (catch before analysis). Monitoring: quality score (0-100%, trend over time). Cost: poor quality expensive (bad decisions, rework). Real-world: customer data cleanup (deduplication, bad address removal).",
+      "keywords": ["quality", "metric", "accuracy", "completeness", "remediation", "validation"],
+      "difficulty": "advanced",
+      "examples": ["Quality rule: email matches @", "Deduplication: merge duplicate customers"]
+    },
+    {
+      "id": 128,
+      "category": "Performance Tuning",
+      "question": "What is query result caching and intermediate materialization?",
+      "answer": "Query result caching: store SELECT output (reuse identical queries). Benefit: fast response (cache hit), reduced CPU. Application cache: Redis stores JSON results. Database cache: query cache (built-in, limited effectiveness). Invalidation: on UPDATE/INSERT clear related caches. Intermediate materialization: break complex query into steps. Example: large LEFT JOIN followed by GROUP BY - calculate intermediate table (materialized view), JOIN against it. Benefits: easier to optimize, reuse intermediate (multiple queries). Costs: storage (extra tables), maintenance (keep updated). Real-world: expensive aggregation materialized daily, reports query materialization (seconds vs minutes). Materialized views: automated refreshes. Temporary tables: session-specific, auto-deleted. Partial materialization: cache parts (tree pruning benefits most). Monitoring: cache size, refresh time, effectiveness (how many queries use).Cascading refreshes: materialization A depends on B (manage order).",
+      "keywords": ["caching", "materialization", "intermediate", "result", "views", "refresh"],
+      "difficulty": "advanced",
+      "examples": ["Cache: daily aggregation in Redis", "Materialized view: expensive report"]
+    },
+    {
+      "id": 129,
+      "category": "Advanced SQL",
+      "question": "What is database transactions and ACID properties?",
+      "answer": "ACID: properties defining reliable transactions. Atomicity: all-or-nothing (success → all changes, failure → none). Example: transfer $100 (debit account A, credit B) - both complete or none. Consistency: valid state before/after transaction (constraints kept). Example: customer balance never negative (constraint enforced). Isolation: concurrent transactions don't interfere. Example: two transfers same account in parallel, correct final balance. Durability: committed data persists despite failures. Example: server crashes after commit, data still there. Implementation: logs (write-ahead logging), locks (prevent interference), snapshots. Levels: serializable (strongest), repeatable-read (good), read-committed (default), read-uncommitted (weak). Trade-off: higher isolation level slower (more locking). Multi-statement transactions: BEGIN; ops... ; COMMIT (atomic). Rollback: ROLLBACK undoes all changes (atomicity). Testing: verify ACID (transfer simulation test).",
+      "keywords": ["transaction", "acid", "atomic", "consistent", "isolated", "durable"],
+      "difficulty": "intermediate",
+      "examples": ["BEGIN; UPDATE account1; UPDATE account2; COMMIT;", "Transfer: atomic all-or-nothing"]
+    },
+    {
+      "id": 130,
+      "category": "Administration",
+      "question": "What is database security audit and compliance monitoring?",
+      "answer": "Audit: track who accesses what data when. Logs: queries, logins, privilege changes, data access. Compliance: GDPR (privacy), HIPAA (healthcare), SOC2 (security). Monitoring: real-time alerts (suspicious access), daily review (access patterns). Access patterns: detect unusual (employee accessing salary data). Privilege review: regular (ensure minimal access). Failed logins: alert if many (attack attempt). Query audit: log SELECT (who saw what), UPDATE (data changes), DELETE (data loss). Real-time alerts: access to sensitive columns, after-hours access. Reports: monthly access reports, quarterly reviews. Retention: keep logs (regulatory period: 1-7 years). Performance: audit overhead (logging slows writes). Archival: old logs to cheap storage. Testing: intentional access (verify logging works). Root cause: investigation (why customer data accessed). Automation: tools (audit logging built-in), scripts (extract reports).",
+      "keywords": ["audit", "compliance", "monitoring", "access", "log", "alert"],
+      "difficulty": "advanced",
+      "examples": ["Log SELECT salary WHERE dept='HR'", "Alert: access to patient data after-hours"]
+    },
+    {
+      "id": 131,
+      "category": "Advanced SQL",
+      "question": "What is SQL window functions advanced techniques?",
+      "answer": "Window functions: perform calculations across row sets. PARTITION BY: group rows (SUM sales per customer). ORDER BY: sequence rows (cumulative, ranking). ROW_NUMBER(): unique sequence (1,2,3 even ties). RANK(): rank with gaps (1,2,2,4 on ties). DENSE_RANK(): rank without gaps (1,2,2,3). LAG/LEAD: previous/next row values. FIRST_VALUE/LAST_VALUE: first/last in window. NTH_VALUE: nth value in window. Frame: ROWS BETWEEN X PRECEDING AND Y FOLLOWING. Example: monthly sales trend (LAG compare to month before). Year-to-date total: SUM(sales) OVER (ORDER BY month). Percentile: ntile(4) divides into quarters. Performance: efficient (single pass), beats GROUP BY + subquery. Complex patterns: rank+dense_rank+ntile together. Syntax subtle: frame default RANGE (not ROWS) affects calculation.",
+      "keywords": ["window", "function", "rank", "lag", "lead", "partition"],
+      "difficulty": "advanced",
+      "examples": ["ROW_NUMBER() OVER (PARTITION BY customer ORDER BY date)", "LAG(sales) OVER (ORDER BY month)"]
+    },
+    {
+      "id": 132,
+      "category": "Cloud Databases",
+      "question": "What is database disaster recovery in cloud?",
+      "answer": "Cloud disaster recovery: leverage cloud services for HA/DR. Multi-region: primary region (active), secondary (standby/read replica). RTO: recovery time objective (how fast switch regions). RPO: recovery point objective (how much data loss acceptable). Cross-region replication: async (fast primary, potential lag), sync (slow primary, no loss). Failover: automatic (DNS/load balancer switches), manual (operator decision). Database-level: RDS multi-AZ (HA within region), read replicas (across region). Application-level: active-active (both regions active), active-passive (one serves, other standby). Testing: disaster recovery drill (practice failover). Cost: duplicating infrastructure (expensive) vs downtime cost. Backup: separate from replication (both needed: recent backup + replicated to instant recover). Cloud features: managed replication (automatic), fast provisioning (recover faster), global databases (AWS Aurora Global, Azure Geo-replication). Real-world: large outage (switch region <15 minutes).",
+      "keywords": ["disaster", "recovery", "cloud", "multi-region", "failover", "rto"],
+      "difficulty": "advanced",
+      "examples": ["Multi-region RDS", "Automatic failover: primary down → secondary active"]
+    },
+    {
+      "id": 133,
+      "category": "Data Engineering",
+      "question": "What is reverse ETL and data activation?",
+      "answer": "Traditional ETL: extract source → transform → load warehouse (direction: operational → analytical). Reverse ETL: warehouse → extract data → transform → activate operational systems. Motivation: insights in warehouse, need to use in operations. Example: customer 360 (warehouse contains all data) → CRM gets enriched profiles (reverse ETL). Use cases: activate audiences (marketing) in ad platforms, enrich CRM with analytics, flag fraud (warehouse model) in operations. Tools: Hightouch, Fivetran Transformations (reverse ETL specialized). Implementation: query warehouse → API data to target system. Real-time: stream changes (customers update in warehouse → CRM updates via Kafka). Activated data: used by operational systems for business logic. Benefits: single transformation (warehouse) used everywhere, data-driven operations. Challenges: target system schema changes (break integration), latency (not real-time), permissions (warehouse data out). Quality matters: bad activation damages operations (wrong enrichment impacts customer experience).",
+      "keywords": ["reverse", "etl", "activation", "warehouse", "operational", "enrich"],
+      "difficulty": "advanced",
+      "examples": ["Warehouse → enrich CRM profiles", "Audience activation: segment → ad platform"]
+    },
+    {
+      "id": 134,
+      "category": "Advanced SQL",
+      "question": "What is database indexing strategies for different patterns?",
+      "answer": "Index selection: key to query performance. Patterns: equality filters (index exact match), range (index range scan), ORDER BY (index sorted), JOINs (index foreign key). Equality: simple index on column. Range: index handles (date BETWEEN X AND Y) efficiently. Compound index: (customer_id, date) allows filtering both (customer_id exact, date range). Leading column: compound index (A,B,C) helps (A), (A,B), not (B) alone. Covering index: include all columns (no table access needed). Partial index: WHERE condition (only relevant rows indexed). Full-text index: text search. Unique index: constraint + speed. Drawbacks: write overhead (INSERT/UPDATE slower), space (storage). Selectivity: high selectivity (index useful) vs low (many matching rows). Monitoring: unused indexes (drop), missing (add). Cardinality: distinct values (high cardinality indexes useful). Bitmap index: low cardinality (yes/no columns). Index decay: performance degrades over time (rebuild/reorganize).",
+      "keywords": ["index", "strategy", "compound", "covering", "selectivity", "cardinality"],
+      "difficulty": "advanced",
+      "examples": ["CREATE INDEX idx_customer_date ON orders(customer_id, date)", "Covering: includes select columns"]
+    },
+    {
+      "id": 135,
+      "category": "Information Systems",
+      "question": "What is data catalog and metadata management?",
+      "answer": "Data catalog: centralized directory of all data assets (tables, columns, APIs). Metadata: data about data (source, owner, lineage, quality, sensitivity). Purpose: discovery (find datasets), governance (who owns), quality (metrics), compliance (sensitive data). Self-service: users search catalog (reduce asking analysts). Tagging: label datasets (marketing, finance, pii). Quality score: automatic (% complete, fresh, unique). Lineage: how does data flow (creation → transformations → use). Search: find by name, owner, tag. Governance: enforce data standards. Tools: Alation, Collibra, Datahub (open-source). Implementation: APIs (crawl metadata), manual (users document), auto-infer (scan database). Challenges: keeping current (catalog stale if not updated), adoption (users must use). Real-world: data request ('give me customer data') → catalog queries → find all relevant tables. Compliance: track sensitive data (PII, HIPAA) → audit access. ROI: reduce data duplication (reuse known datasets), faster analysis (discovery easy).",
+      "keywords": ["catalog", "metadata", "discovery", "governance", "lineage", "tagging"],
+      "difficulty": "advanced",
+      "examples": ["Catalog: search datasets by tag 'customer'", "Lineage: source → ETL → warehouse"]
+    },
+    {
+      "id": 136,
+      "category": "Database Design",
+      "question": "What is temporal databases and slowly changing dimensions?",
+      "answer": "Temporal database: track data changes over time. SCD Type 0: no history (current only). Type 1: overwrite (history lost). Type 2: add record + end date (full history). Type 3: add 'previous' columns (limited history). Example: customer address changes - Type 2 keeps all (address_id, address, valid_from, valid_to). Query: address on specific day → filter by date range. Benefits: audit trail, understand changes, temporal queries. Effective dating: valid_from/valid_to (metadata). Current flag: is_current=true/false (optimization). Real-world: customer SCD2 table tracks moves, price history, dimension shrinkage detectable. Challenges: complicated queries (always include date filter), storage (duplicate data). Surrogate key: address_id differs per version (enable joins). Type 4: separate history table (current + history split). Slow dimensions: infrequently change (address), fast dimensions: often change (price), bridge: track many-to-many relationships. Data warehouse: essential for analytics (historical comparison).",
+      "keywords": ["temporal", "scd", "slowly", "changing", "dimension", "history"],
+      "difficulty": "advanced",
+      "examples": ["SCD2: customer table with valid_from/valid_to dates", "Query address at date X"]
+    },
+    {
+      "id": 137,
+      "category": "Advanced SQL",
+      "question": "What is database statistics and cost-based optimization?",
+      "answer": "Statistics: metadata helping optimizer choose best plan. Types: table stats (rows, pages), column stats (distinct values, NULL %), histogram (value distribution). Histogram: buckets of values (optimizer knows distribution). Example: age column mostly 20-40 (few 100+) influences filter selectivity estimate. Optimizer uses statistics: plan A (table scan) vs plan B (index scan) - choose minimum cost. Cost estimate: CPU + I/O (disk reads expensive). Stale statistics: bad estimates, wrong plan. Refresh: ANALYZE TABLE (MySQL), ANALYZE (PostgreSQL). Auto refresh: many DBs auto-update (configurable). Monitoring: actual vs estimated rows (difference indicates stale stats). Incremental stats: track changes after load. Correlated columns: handling (age and income correlated in real data). Extended stats: joint distribution (optimizer smarter). Challenges: time (statistics compute takes time), accuracy (estimate limits). Finding: skewed data (histogram helps).",
+      "keywords": ["statistics", "cost", "histogram", "estimate", "optimizer", "distribution"],
+      "difficulty": "advanced",
+      "examples": ["ANALYZE TABLE users statistics", "Histogram: age 20-40 most common"]
+    },
+    {
+      "id": 138,
+      "category": "Distributed Databases",
+      "question": "What is vector databases and similarity search?",
+      "answer": "Vector database: specialized for high-dimensional vectors (embeddings). Use: semantic search, recommendation, ML features. Vector embedding: text/image converted to numbers (768-dim for language models). Similarity: nearest neighbors (L2 distance, cosine similarity). Query: find vectors similar to input (top-K results). Example: 'find articles similar to this' → embed article → find similar vectors. Scale: billions of vectors (requiring indexing). Indexes: HNSW (hierarchical navigable small world), LSH (locality-sensitive hashing). Performance: fast nearest neighbor search (optimized algorithms). Use cases: recommendation (user embedding vs product embedding), semantic search (query embedding vs doc embedding). Generative AI: prompt embeddings → retrieve relevant context (RAG). Tools: Pinecone, Milvus (open-source), Weaviate. Hybrid: combine traditional DB (metadata filtering) + vector DB (similarity). Cost: specialized (managed service), training embeddings. Real-world: e-commerce (product recommendations), search ('find articles about X meaning', not keyword matching).",
+      "keywords": ["vector", "embedding", "similarity", "search", "nearest", "index"],
+      "difficulty": "advanced",
+      "examples": ["Vector DB: find articles semantically similar", "Recommendation: user embedding vs product embedding"]
+    },
+    {
+      "id": 139,
+      "category": "Database Design",
+      "question": "What is database abstraction and ORM frameworks?",
+      "answer": "ORM: Object-Relational Mapping - map SQL tables to objects/classes. Benefits: write once run anywhere (abstract DB), type-safe (compile-time checks), convenience (auto-SQL). Example: User class → users table, User.save() → INSERT. Frameworks: SQLAlchemy (Python), Hibernate (Java), Entity Framework (C#), Eloquent (PHP). Queries: ORM query builder vs raw SQL. Example: session.query(User).filter(User.age > 25) → SELECT * FROM users WHERE age > 25. Lazy loading: fetch related objects on access (can be slow - N+1 problem). Eager loading: pre-fetch related (specify in query). Migrations: ORM manages schema changes (version control). Disadvantages: overhead (slower than optimized SQL), complex queries hard (fall back to SQL), learning curve. When use: CRUD apps (ORM shine), analytics (raw SQL better). Mix: ORM for objects, raw SQL for complex queries. Patterns: repository pattern (decouple ORM), transaction management (automatic). Performance: understanding generated SQL crucial.",
+      "keywords": ["orm", "abstraction", "mapping", "class", "object", "query"],
+      "difficulty": "intermediate",
+      "examples": ["SQLAlchemy: User.query.filter(User.age>25)", "Auto generates: SELECT * FROM users WHERE age>25"]
+    },
+    {
+      "id": 140,
+      "category": "Information Systems",
+      "question": "What is data strategy and digital transformation?",
+      "answer": "Data strategy: leveraging data for competitive advantage. Components: governance (manage data), architecture (systems), analytics (insights), culture (data-driven). Governance: policies, ownership, quality. Architecture: tools, platforms, infrastructure. Analytics: descriptive (what happened), predictive (what will happen), prescriptive (what to do). Culture: data democratization (everyone uses data), literacy (understanding statistics), organization structure (CDO reports C-suite). Digital transformation: using tech (including data) to change business. Stages: optimizing (efficiency), transforming (new models), disrupting (compete differently). Data maturity: reactive (problems identified), proactive (trends forecasted), predictive (ML models). Challenges: organizational (resistance), technical (infrastructure), skills (talent shortage). Implementation: start small (pilots), learn, scale. Metrics: business outcomes (revenue, retention), technical (latency, quality). Investment: data platform (expensive upfront), ROI long-term (better decisions). Real-world: retail → ecommerce using customer data insights, recommendations.",
+      "keywords": ["strategy", "transformation", "governance", "analytics", "culture", "maturity"],
+      "difficulty": "advanced",
+      "examples": ["Data strategy: recommendation system", "Digital transformation: prediction using ML"]
+    }
+  ]
+}

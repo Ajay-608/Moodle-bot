@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>Performance Metrics</h2>
+<div class="list-group">
+    {% for session in sessions %}
+    <div class="list-group-item">
+        <strong>{{ session.user.username }}</strong> - {{ session.title }}<br>
+        <small>{{ session.created_at|date:"M d, Y H:i" }}</small>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
