@@ -74,7 +74,7 @@ class RAGEngine:
             }
 
         context = "\n\n---\n\n".join([
-            f"{doc.title}\n{self.clean_text(doc.content[:400])}"
+            f"{doc.title}\n{self.clean_text(doc.content[:200])}"
             for doc in context_docs[:3] if doc.content
         ])
 
@@ -95,9 +95,16 @@ Answer in plain conversational sentences only."""
             response = requests.post(
                 self.ollama_url,
                 json={
+
+
                     "model": self.ollama_model,
                     "prompt": prompt,
-                    "stream": False
+                    "stream": False,
+                    "options": {
+
+                        "num_predict": 150,
+                        "temperature": 0.1
+                    }
                 },
                 timeout=60
             )

@@ -56,7 +56,7 @@ def send_message(request):
         # Try Gemini RAG first
         if rag_engine is not None:
             print(f"✅ Using Gemini RAG")
-            docs, distances = rag_engine.search(query)
+            docs, distances = rag_engine.search(query, k=1)
             result = rag_engine.generate_response(query, docs)
             return JsonResponse({
                 'success': True,
