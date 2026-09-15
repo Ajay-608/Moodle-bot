@@ -53,9 +53,9 @@ def send_message(request):
         if not query:
             return JsonResponse({'error': 'Empty message'}, status=400)
 
-        # Try Gemini RAG first
+        # RAG engine (Groq primary, OpenRouter fallback — see rag_engine.py)
         if rag_engine is not None:
-            print(f"✅ Using Gemini RAG")
+            print(f"✅ Using RAG Engine")
             docs, distances = rag_engine.search(query, k=1)
             result = rag_engine.generate_response(query, docs)
             return JsonResponse({
@@ -63,7 +63,7 @@ def send_message(request):
                 'bot_response': result['answer'],
                 'confidence': result['confidence'],
                 'sources': result['sources'],
-                'source_type': 'gemini_rag'
+                'source_type': 'rag_engine'
             })
 
         # Fallback: keyword-based responses

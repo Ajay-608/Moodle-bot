@@ -10,33 +10,22 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables (.env locally, real env vars on Render)
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^pd947x#r(^_)c3udz!*tx$f2pww(*9a1m!eltrsl=hq!)h3%h'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-
-# Load environment variables FIRST
-load_dotenv()
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
+# --- Security settings (driven by environment variables) ---
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-super-secret-key-change-in-production')
-DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -60,10 +49,12 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # serves static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.rate_limit_middleware.ChatRateLimitMiddleware',  # protects Groq/OpenRouter quota
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -88,7 +79,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'moodlebot.wsgi.application'
 
-# Database - FIXED: Using SQLite for now (no MySQL setup needed)
+# Database — SQLite (fine for a demo deployment; note Render's free tier
+# disk is not guaranteed persistent across deploys, so data may reset)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -116,11 +108,12 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# --- Static & media files ---
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Add to bottom
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -128,13 +121,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 
-
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-
-# REST Framework
+# --- REST Framework ---
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
@@ -144,13 +133,15 @@ REST_FRAMEWORK = {
     ]
 }
 
-# OpenAI API Key
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-
-# Celery (Optional)
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-# LOGIN SETTINGS - ADD THESE LINES
+# --- Login settings ---
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+# NOTE: The old CELERY_BROKER_URL / CELERY_RESULT_BACKEND / OPENAI_API_KEY
+# settings were removed here — MoodleBot's rag_engine.py doesn't use Celery,
+# Redis, or the OpenAI SDK (it calls Groq/OpenRouter directly via `requests`
+# using GROQ_API_KEY / OPENROUTER_API_KEY from the environment). Removing
+# them avoids needing packages you don't actually use. If you add Celery
+# back later, reintroduce those two lines and add `celery` + `redis` to
+# requirements.txt.

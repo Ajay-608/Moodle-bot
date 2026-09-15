@@ -1,10 +1,13 @@
 .env
 db.sqlite3
-rag_index.faiss
 venv/
 __pycache__/
 *.pyc
 media/
-*.txt
 test_gemini.py
 list_models.py
+
+# ignore specific txt files, but keep requirements.txt
+PROJECT_SUMMARY.txt
+*.txt
+!requirements.txt

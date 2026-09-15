@@ -14,8 +14,19 @@ class RAGEngine:
             self.model = SentenceTransformer('all-MiniLM-L6-v2')
             self.dimension = 384
             self.index = None
-            self.ollama_url = "http://localhost:11434/api/generate"
-            self.ollama_model = "llama3.2:1b"
+
+            # --- Groq (primary) ---
+            self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
+            self.groq_api_key = os.environ.get("GROQ_API_KEY")
+            self.groq_model = os.environ.get("LLM_MODEL", "llama-3.1-8b-instant")
+
+            # --- OpenRouter (fallback, used only if Groq fails) ---
+            self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
+            self.openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
+            self.openrouter_model = os.environ.get(
+                "OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct:free"
+            )
+
             print("🔄 Initializing RAG Engine...")
             self._safe_setup()
             print("✅ RAG Engine ready!")
@@ -63,8 +74,28 @@ class RAGEngine:
             print(f"Search error: {e}")
             return [], [1.0] * k
 
+    def _call_openai_style(self, url, api_key, model, prompt, timeout=30):
+        """Shared caller for Groq and OpenRouter — both use the OpenAI chat format."""
+        response = requests.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 150,
+                "temperature": 0.1
+            },
+            timeout=timeout
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+
     def generate_response(self, query, context_docs):
         print(f"📄 Context docs received: {len(context_docs)}")
+
         if not context_docs:
             print("⚠️ No docs found — returning fallback")
             return {
@@ -79,6 +110,7 @@ class RAGEngine:
         ])
 
         prompt = f"""You are MoodleBot, a friendly database systems tutor.
+
 Using the context below, answer the student's question in a natural
 conversational way. Do NOT use markdown headers, bullet symbols, or
 hashtags. Just write 2-3 plain sentences like a teacher explaining
@@ -91,30 +123,37 @@ QUESTION: {query}
 
 Answer in plain conversational sentences only."""
 
+        answer = None
+
+        # --- Try Groq first ---
         try:
-            response = requests.post(
-                self.ollama_url,
-                json={
-
-
-                    "model": self.ollama_model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-
-                        "num_predict": 150,
-                        "temperature": 0.1
-                    }
-                },
-                timeout=60
+            if not self.groq_api_key:
+                raise RuntimeError("GROQ_API_KEY not set")
+            answer = self._call_openai_style(
+                self.groq_url, self.groq_api_key, self.groq_model, prompt
             )
-            answer = response.json()["response"].strip()
-            print(f"✅ Ollama answered: {answer[:150]}")
+            print(f"✅ Groq answered: {answer[:150]}")
+        except Exception as e:
+            print(f"⚠️ Groq failed ({e}) — trying OpenRouter fallback...")
+
+            # --- Fallback to OpenRouter ---
+            try:
+                if not self.openrouter_api_key:
+                    raise RuntimeError("OPENROUTER_API_KEY not set")
+                answer = self._call_openai_style(
+                    self.openrouter_url, self.openrouter_api_key,
+                    self.openrouter_model, prompt
+                )
+                print(f"✅ OpenRouter answered: {answer[:150]}")
+            except Exception as e2:
+                print(f"❌ OpenRouter also failed: {e2}")
+
+        if answer:
             answer = re.sub(r'#+\s*', '', answer)
             answer = re.sub(r'\*\*', '', answer)
             answer = re.sub(r'\n+', ' ', answer).strip()
-        except Exception as e:
-            print(f"❌ Ollama error: {e}")
+        else:
+            # --- Both providers failed: plain-text fallback ---
             titles = [doc.title for doc in context_docs]
             answer = f"Based on {', '.join(titles)}: {query}"
 
