@@ -11,4 +11,4 @@ list_models.py
 PROJECT_SUMMARY.txt
 *.txt
 !requirements.txt
-!runtime.txtgit add .gitignore
+!runtime.txt
