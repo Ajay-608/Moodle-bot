@@ -3,12 +3,16 @@ db.sqlite3
 venv/
 __pycache__/
 *.pyc
-media/
 test_gemini.py
 list_models.py
-
+ 
 # ignore specific txt files, but keep requirements.txt and runtime.txt
+# NOTE: media/ is intentionally NOT ignored — it holds the course
+# material .txt files (DBMS.txt, Information Systems.txt) that
+# index_text_files.py needs to build the knowledge base. Without
+# these committed, Render's build has nothing to index.
 PROJECT_SUMMARY.txt
 *.txt
 !requirements.txt
 !runtime.txt
+!media/*.txt
