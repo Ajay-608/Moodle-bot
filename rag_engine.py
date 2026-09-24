@@ -91,7 +91,10 @@ class RAGEngine:
             timeout=timeout
         )
         response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"].strip()
+        content = response.json()["choices"][0]["message"]["content"]
+        if not content:
+            raise RuntimeError(f"Provider returned empty content (model: {model})")
+        return content.strip()
 
     def generate_response(self, query, context_docs):
         print(f"📄 Context docs received: {len(context_docs)}")
