@@ -61,164 +61,568 @@
     </div>
 </div>
 
-<!-- ✅ CRITICAL: Hidden CSRF Token -->
+<!-- Hidden CSRF Token -->
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Markdown renderer: converts the bot's ```sql code blocks and | table | syntax into real HTML -->
+
+<!-- Markdown renderer -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+
 <script>
 $(document).ready(function() {
-    // ✅ FIXED: Reliable CSRF token
+
+    /*
+    ============================================================
+    CURRENT CHAT SESSION MEMORY
+    ============================================================
+
+    The backend creates a ChatSession when the first message is sent.
+
+    After receiving the response, the backend returns:
+
+        session_id
+
+    We store that ID here.
+
+    Every following message sends the same session_id.
+
+    Therefore:
+
+        Message 1
+             ↓
+        ChatSession #123 created
+             ↓
+        session_id = 123
+             ↓
+        Message 2 sends session_id=123
+             ↓
+        Backend loads previous messages
+             ↓
+        LLM receives current-session history
+
+    When the page is refreshed, this variable starts as null.
+    That means a new chat session is created.
+
+    Previous database sessions are NOT automatically loaded into
+    the LLM, which matches the required architecture.
+    ============================================================
+    */
+
+    let currentSessionId = null;
+
+
+    // ============================================================
+    // CSRF TOKEN
+    // ============================================================
+
     function getCSRFToken() {
         return $('[name=csrfmiddlewaretoken]').val();
     }
 
-    // Escape HTML in user-typed text so it can't inject markup/scripts
+
+    // ============================================================
+    // ESCAPE HTML
+    // ============================================================
+
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
-    // Send message handler - ✅ FIXED AJAX
-    window.sendMessage = function() {
-        const query = $('#message-input').val().trim();
-        if (!query) return;
 
-        // Add user message immediately
+    // ============================================================
+    // SEND MESSAGE
+    // ============================================================
+
+    window.sendMessage = function() {
+
+        const query = $('#message-input').val().trim();
+
+        if (!query) {
+            return;
+        }
+
+
+        // Add user's message immediately
         addMessage('user', query);
-        $('#message-input').val('').prop('disabled', true);
-        $('#send-btn').html('<i class="fas fa-spinner fa-spin me-1"></i>Thinking...').prop('disabled', true);
+
+
+        // Disable input while processing
+        $('#message-input')
+            .val('')
+            .prop('disabled', true);
+
+        $('#send-btn')
+            .html('<i class="fas fa-spinner fa-spin me-1"></i>Thinking...')
+            .prop('disabled', true);
+
         $('#status').text('🔍 Searching course materials...');
 
-        // ✅ FIXED: Proper Django AJAX with CSRF + Error Logging
+
+        // ========================================================
+        // REQUEST DATA
+        // ========================================================
+
+        const requestData = {
+            message: query
+        };
+
+
+        /*
+        IMPORTANT:
+
+        Do NOT send session_id on the first message.
+
+        Backend behavior:
+
+        session_id = null
+            ↓
+        create new ChatSession
+            ↓
+        return session_id
+
+        For subsequent messages:
+
+        session_id = existing session
+            ↓
+        load previous messages
+            ↓
+        use conversation history
+        */
+
+        if (currentSessionId !== null) {
+            requestData.session_id = currentSessionId;
+        }
+
+
+        // ========================================================
+        // AJAX REQUEST
+        // ========================================================
+
         $.ajax({
+
             url: '{% url "chat:send_message" %}',
+
             method: 'POST',
+
             contentType: 'application/json',
-            data: JSON.stringify({message: query}),
+
+            data: JSON.stringify(requestData),
+
             headers: {
                 'X-CSRFToken': getCSRFToken()
             },
+
+
+            // ====================================================
+            // SUCCESS
+            // ====================================================
+
             success: function(data) {
-                console.log('✅ Success:', data); // DEBUG
+
+                console.log('✅ Success:', data);
+
+
+                // Remove loading message if one exists
                 $('#chat-messages .loading').remove();
-                
-                const confidence = (data.confidence * 100).toFixed(0);
-                addMessage('bot', data.bot_response, confidence, data.sources);
-                
+
+
+                /*
+                ====================================================
+                STORE SESSION ID
+                ====================================================
+
+                Backend returns:
+
+                    {
+                        session_id: 123,
+                        bot_response: "...",
+                        confidence: 0.85,
+                        sources: [...]
+                    }
+
+                We store the session ID so the next message
+                belongs to the SAME conversation.
+                ====================================================
+                */
+
+                if (data.session_id !== undefined && data.session_id !== null) {
+
+                    currentSessionId = data.session_id;
+
+                    console.log(
+                        '💬 Current chat session:',
+                        currentSessionId
+                    );
+                }
+
+
+                // =================================================
+                // BOT RESPONSE
+                // =================================================
+
+                const confidenceValue =
+                    typeof data.confidence === 'number'
+                        ? data.confidence
+                        : 0;
+
+                const confidence =
+                    (confidenceValue * 100).toFixed(0);
+
+
+                addMessage(
+                    'bot',
+                    data.bot_response || 'No response received.',
+                    confidence,
+                    data.sources || []
+                );
+
+
+                // Update confidence panel
                 updateConfidence(confidence);
-                showSources(data.sources);
-                $('#status').text(`✅ Answered (${confidence}%)`);
+
+
+                // Update sources
+                showSources(data.sources || []);
+
+
+                // Status
+                $('#status').text(
+                    `✅ Answered (${confidence}%)`
+                );
             },
+
+
+            // ====================================================
+            // ERROR
+            // ====================================================
+
             error: function(xhr, status, error) {
-                console.error('❌ AJAX Error:', xhr.status, xhr.responseText); // DEBUG
+
+                console.error(
+                    '❌ AJAX Error:',
+                    xhr.status,
+                    xhr.responseText
+                );
+
+
                 let errorMsg = '❌ Server error. ';
-                if (xhr.status === 403) errorMsg += 'CSRF token missing.';
-                else if (xhr.status === 500) errorMsg += 'Server crash.';
-                else errorMsg += `HTTP ${xhr.status}`;
-                
-                addMessage('bot', errorMsg, '', []);
-                $('#status').text('❌ Check browser console (F12)');
+
+
+                if (xhr.status === 403) {
+
+                    errorMsg +=
+                        'CSRF token missing.';
+
+                } else if (xhr.status === 500) {
+
+                    errorMsg +=
+                        'Server crash.';
+
+                } else {
+
+                    errorMsg +=
+                        `HTTP ${xhr.status}`;
+                }
+
+
+                addMessage(
+                    'bot',
+                    errorMsg,
+                    '',
+                    []
+                );
+
+
+                $('#status').text(
+                    '❌ Check browser console (F12)'
+                );
             },
+
+
+            // ====================================================
+            // COMPLETE
+            // ====================================================
+
             complete: function() {
-                $('#message-input').prop('disabled', false).focus();
-                $('#send-btn').html('<i class="fas fa-paper-plane me-1"></i>Send').prop('disabled', false);
+
+                $('#message-input')
+                    .prop('disabled', false)
+                    .focus();
+
+
+                $('#send-btn')
+                    .html(
+                        '<i class="fas fa-paper-plane me-1"></i>Send'
+                    )
+                    .prop('disabled', false);
             }
         });
     };
 
-    // Event listeners
+
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
+
     $('#send-btn').click(sendMessage);
+
+
     $('#message-input').on('keypress', function(e) {
-        if (e.which === 13) sendMessage();
+
+        if (e.which === 13) {
+            sendMessage();
+        }
+
     });
 
-    // Message display functions
-    function addMessage(sender, content, confidence = '', sources = []) {
-        const messageClass = sender === 'user' ? 'user-message' : 'bot-message';
-        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
 
-        // Bot messages: render markdown (code blocks, tables, etc.) to HTML.
-        // User messages: escape as plain text so typed text can't inject HTML.
-        const renderedContent = (sender === 'bot' && typeof marked !== 'undefined')
-            ? marked.parse(content)
-            : escapeHtml(content);
+    // ============================================================
+    // MESSAGE DISPLAY
+    // ============================================================
+
+    function addMessage(
+        sender,
+        content,
+        confidence = '',
+        sources = []
+    ) {
+
+        const messageClass =
+            sender === 'user'
+                ? 'user-message'
+                : 'bot-message';
+
+
+        const time =
+            new Date().toLocaleTimeString(
+                [],
+                {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }
+            );
+
+
+        /*
+        Bot messages:
+
+        Markdown is rendered so SQL code blocks,
+        tables, lists, etc. display correctly.
+
+        User messages:
+
+        HTML is escaped to prevent injection.
+        */
+
+        const renderedContent =
+            (
+                sender === 'bot' &&
+                typeof marked !== 'undefined'
+            )
+                ? marked.parse(content)
+                : escapeHtml(content);
+
 
         const messageDiv = $(`
             <div class="message-container mb-4 ${messageClass}">
                 <div class="message-bubble">
                     <div class="message-content">${renderedContent}</div>
-                    ${sender === 'bot' && confidence ? `
-                        <div class="mt-2 p-2 bg-light rounded small">
-                            <span class="badge bg-success me-2">Confidence: ${confidence}%</span>
-                            <i class="fas fa-check-circle text-success"></i>
-                        </div>
-                    ` : ''}
+
+                    ${
+                        sender === 'bot' && confidence
+                            ? `
+                                <div class="mt-2 p-2 bg-light rounded small">
+                                    <span class="badge bg-success me-2">
+                                        Confidence: ${confidence}%
+                                    </span>
+
+                                    <i class="fas fa-check-circle text-success"></i>
+                                </div>
+                              `
+                            : ''
+                    }
+
                 </div>
-                ${sender === 'user' ? 
-                    `<div class="message-time text-end mt-1 small text-muted">${time}</div>` : 
-                    `<div class="message-time mt-1 small text-muted">
-                        <i class="fas fa-brain me-1 text-primary"></i>${time}
-                    </div>`
+
+                ${
+                    sender === 'user'
+                        ?
+                        `
+                        <div class="message-time text-end mt-1 small text-muted">
+                            ${time}
+                        </div>
+                        `
+                        :
+                        `
+                        <div class="message-time mt-1 small text-muted">
+                            <i class="fas fa-brain me-1 text-primary"></i>
+                            ${time}
+                        </div>
+                        `
                 }
+
             </div>
         `);
-        
-        $('#chat-messages').append(messageDiv).scrollTop($('#chat-messages')[0].scrollHeight);
+
+
+        $('#chat-messages')
+            .append(messageDiv)
+            .scrollTop(
+                $('#chat-messages')[0].scrollHeight
+            );
     }
+
+
+    // ============================================================
+    // CONFIDENCE
+    // ============================================================
 
     function updateConfidence(confidence) {
+
         const percent = parseFloat(confidence);
-        $('#confidence-score').text(percent.toFixed(0) + '%');
-        $('#confidence-bar').css('width', percent + '%')
-            .removeClass('bg-danger bg-warning bg-success')
-            .addClass(percent >= 90 ? 'bg-success' : percent >= 80 ? 'bg-warning' : 'bg-danger');
+
+
+        $('#confidence-score')
+            .text(percent.toFixed(0) + '%');
+
+
+        $('#confidence-bar')
+            .css('width', percent + '%')
+            .removeClass(
+                'bg-danger bg-warning bg-success'
+            )
+            .addClass(
+                percent >= 90
+                    ? 'bg-success'
+                    : percent >= 80
+                        ? 'bg-warning'
+                        : 'bg-danger'
+            );
     }
 
+
+    // ============================================================
+    // SOURCES
+    // ============================================================
+
     function showSources(sources) {
+
         const panel = $('#sources-panel');
+
         panel.empty();
-        
+
+
         if (!sources || sources.length === 0) {
-            panel.html('<small class="text-muted text-center py-3">Smart fallback</small>');
+
+            panel.html(
+                '<small class="text-muted text-center py-3">' +
+                'Smart fallback' +
+                '</small>'
+            );
+
+            $('#source-count')
+                .text('0')
+                .removeClass('bg-primary')
+                .addClass('bg-secondary');
+
             return;
         }
-        
-        sources.forEach((source) => {
+
+
+        sources.forEach(function(source) {
+
             panel.append(`
                 <div class="source-item mb-2 p-2 bg-light rounded">
-                    <div class="fw-bold small">${source}</div>
+                    <div class="fw-bold small">
+                        ${escapeHtml(source)}
+                    </div>
                 </div>
             `);
+
         });
-        $('#source-count').text(sources.length).removeClass('bg-secondary').addClass('bg-primary');
+
+
+        $('#source-count')
+            .text(sources.length)
+            .removeClass('bg-secondary')
+            .addClass('bg-primary');
     }
+
 });
 </script>
 
+
 <style>
-.message-container { animation: fadeIn 0.3s ease-in; }
+.message-container {
+    animation: fadeIn 0.3s ease-in;
+}
+
 .user-message .message-bubble { 
-    margin-left: auto; max-width: 70%; background: #0d6efd; color: white; 
+    margin-left: auto;
+    max-width: 70%;
+    background: #0d6efd;
+    color: white; 
     border-radius: 18px 18px 5px 18px;
 }
-.bot-message .message-bubble { 
-    max-width: 75%; background: white; border: 1px solid #e9ecef; border-radius: 18px 18px 18px 5px; 
-}
-.message-bubble { padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); word-wrap: break-word; }
-.source-item:hover { background: #e3f2fd !important; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-#chat-messages::-webkit-scrollbar { width: 8px; }
-#chat-messages::-webkit-scrollbar-track { background: #f8f9fa; }
-#chat-messages::-webkit-scrollbar-thumb { background: #0d6efd; border-radius: 4px; }
 
-/* --- Markdown rendering styles (code blocks, tables, lists) --- */
-.message-content p { margin: 0 0 8px 0; }
-.message-content p:last-child { margin-bottom: 0; }
+.bot-message .message-bubble { 
+    max-width: 75%;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 18px 18px 18px 5px; 
+}
+
+.message-bubble {
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    word-wrap: break-word;
+}
+
+.source-item:hover {
+    background: #e3f2fd !important;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+#chat-messages::-webkit-scrollbar-track {
+    background: #f8f9fa;
+}
+
+#chat-messages::-webkit-scrollbar-thumb {
+    background: #0d6efd;
+    border-radius: 4px;
+}
+
+
+/* --- Markdown rendering styles --- */
+
+.message-content p {
+    margin: 0 0 8px 0;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
 .message-content pre {
     background: #1e1e2e;
     color: #cdd6f4;
@@ -229,9 +633,11 @@ $(document).ready(function() {
     font-size: 0.85rem;
     max-width: 100%;
 }
+
 .message-content code {
     font-family: 'Courier New', Consolas, monospace;
 }
+
 .message-content :not(pre) > code {
     background: rgba(0,0,0,0.08);
     padding: 2px 5px;
@@ -239,10 +645,12 @@ $(document).ready(function() {
     font-size: 0.9em;
     color: #d6336c;
 }
+
 .user-message .message-content :not(pre) > code {
     background: rgba(255,255,255,0.2);
     color: #fff;
 }
+
 .message-content table {
     border-collapse: collapse;
     width: 100%;
@@ -251,18 +659,24 @@ $(document).ready(function() {
     display: block;
     overflow-x: auto;
 }
-.message-content th, .message-content td {
+
+.message-content th,
+.message-content td {
     border: 1px solid #dee2e6;
     padding: 6px 10px;
     text-align: left;
 }
+
 .message-content th {
     background: #f1f3f5;
     font-weight: 600;
 }
-.message-content ul, .message-content ol {
+
+.message-content ul,
+.message-content ol {
     margin: 4px 0 8px 0;
     padding-left: 20px;
 }
 </style>
+
 {% endblock %}

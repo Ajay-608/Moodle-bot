@@ -1,14 +1,17 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+
 import json
-import re
 import logging
 
-# Safe model imports
+
+# ============================================================
+# MODEL IMPORTS
+# ============================================================
+
 try:
     from .models import ChatSession, Message
 except ImportError:
@@ -16,191 +19,752 @@ except ImportError:
     Message = None
     print("⚠️ Chat models unavailable")
 
-# Safe knowledge base import
+
 try:
     from knowledge.models import Document
 except ImportError:
     Document = None
     print("⚠️ Knowledge base unavailable")
 
+
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# LAZY RAG ENGINE LOADING
+# ============================================================
+
 _rag_engine = None
 _rag_engine_loaded = False
 
 
 def _get_rag_engine():
-    global _rag_engine, _rag_engine_loaded
+    """
+    Load the RAG engine only when a chat request needs it.
+    """
+
+    global _rag_engine
+    global _rag_engine_loaded
+
     if not _rag_engine_loaded:
+
         try:
             from rag_engine import rag_engine
-        except Exception:
-            logger.exception("RAG engine could not be initialized")
-        else:
+
             _rag_engine = rag_engine
-        _rag_engine_loaded = True
+
+            logger.info(
+                "✅ RAG engine loaded successfully"
+            )
+
+        except Exception as e:
+
+            logger.exception(
+                "❌ RAG engine could not be initialized: %s",
+                e
+            )
+
+            _rag_engine = None
+
+        finally:
+            _rag_engine_loaded = True
+
     return _rag_engine
 
 
+# ============================================================
+# CHAT PAGE
+# ============================================================
+
 @login_required
 def chat_view(request):
-    """Main chat interface"""
-    return render(request, 'chat/chat.html', {
-        'title': 'AI Chatbot - MoodleBot'
-    })
+    """
+    Main MoodleBot chat interface.
 
+    A new ChatSession is created when the user opens the
+    chat page without explicitly requesting an existing session.
+    """
+
+    return render(
+        request,
+        "chat/chat.html",
+        {
+            "title": "AI Chatbot - MoodleBot"
+        }
+    )
+
+
+# ============================================================
+# SEND MESSAGE
+# ============================================================
 
 @csrf_exempt
 @require_http_methods(["POST"])
 @login_required
 def send_message(request):
+
     try:
+
+        # ----------------------------------------------------
+        # Parse request
+        # ----------------------------------------------------
+
         data = json.loads(request.body)
-        query = data.get('message', '').strip()
+
+        query = data.get(
+            "message",
+            ""
+        ).strip()
+
+        session_id = data.get(
+            "session_id"
+        )
+
         query_lower = query.lower()
 
-        print(f"🔍 User Query: '{query}'")
+        print(
+            f"🔍 User Query: '{query}'"
+        )
+
+        # ----------------------------------------------------
+        # Validate message
+        # ----------------------------------------------------
 
         if not query:
-            return JsonResponse({'error': 'Empty message'}, status=400)
 
-        # Load the RAG engine only when a chat request needs it.
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Empty message"
+                },
+                status=400
+            )
+
+        # ----------------------------------------------------
+        # Validate chat models
+        # ----------------------------------------------------
+
+        if ChatSession is None or Message is None:
+
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Chat system is unavailable."
+                },
+                status=503
+            )
+
+        # ----------------------------------------------------
+        # Get existing session OR create new session
+        # ----------------------------------------------------
+
+        if session_id:
+
+            try:
+
+                session = ChatSession.objects.get(
+                    id=session_id,
+                    user=request.user
+                )
+
+            except ChatSession.DoesNotExist:
+
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "Chat session not found."
+                    },
+                    status=404
+                )
+
+        else:
+
+            session = ChatSession.objects.create(
+                user=request.user,
+                title=query[:200]
+            )
+
+            print(
+                f"🆕 Created ChatSession: {session.id}"
+            )
+
+        # ----------------------------------------------------
+        # Load previous messages from CURRENT session only
+        # ----------------------------------------------------
+
+        previous_messages = (
+            Message.objects
+            .filter(
+                session=session
+            )
+            .order_by(
+                "created_at"
+            )
+        )
+
+        conversation_history = []
+
+        for message in previous_messages:
+
+            role = (
+                "user"
+                if message.message_type == "user"
+                else "assistant"
+            )
+
+            conversation_history.append(
+                {
+                    "role": role,
+                    "content": message.content
+                }
+            )
+
+        print(
+            f"🧠 Previous messages in session: "
+            f"{len(conversation_history)}"
+        )
+
+        # ----------------------------------------------------
+        # Save current user message
+        # ----------------------------------------------------
+
+        Message.objects.create(
+            session=session,
+            message_type="user",
+            content=query
+        )
+
+        print(
+            f"💾 User message saved to session {session.id}"
+        )
+
+        # ====================================================
+        # RAG ENGINE
+        # ====================================================
+
         rag_engine = _get_rag_engine()
-        if rag_engine is not None:
-            print(f"✅ Using RAG Engine")
-            docs, distances = rag_engine.search(query, k=1)
-            result = rag_engine.generate_response(query, docs)
-            return JsonResponse({
-                'success': True,
-                'bot_response': result['answer'],
-                'confidence': result['confidence'],
-                'sources': result['sources'],
-                'source_type': 'rag_engine'
-            })
 
-        # Fallback: keyword-based responses
-        print(f"⚙️ Using keyword fallback")
+        if rag_engine is not None:
+
+            print(
+                "✅ Using RAG Engine"
+            )
+
+            # ------------------------------------------------
+            # Retrieve top 5 relevant chunks
+            # ------------------------------------------------
+
+            docs, scores = rag_engine.search(
+                query,
+                k=5
+            )
+
+            print(
+                f"📚 Retrieved {len(docs)} "
+                f"relevant chunks"
+            )
+
+            # ------------------------------------------------
+            # Generate grounded response
+            # ------------------------------------------------
+
+            result = rag_engine.generate_response(
+                query,
+                docs,
+                scores,
+                conversation_history=conversation_history
+            )
+
+            # ------------------------------------------------
+            # Save bot response
+            # ------------------------------------------------
+
+            Message.objects.create(
+                session=session,
+                message_type="bot",
+                content=result["answer"],
+                confidence_score=result["confidence"]
+            )
+
+            print(
+                f"💾 Bot response saved to session {session.id}"
+            )
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "session_id": session.id,
+                    "bot_response": result["answer"],
+                    "confidence": result["confidence"],
+                    "sources": result["sources"],
+                    "source_type": "rag_engine"
+                }
+            )
+
+        # ====================================================
+        # KEYWORD FALLBACK
+        # ====================================================
+
+        print(
+            "⚙️ Using keyword fallback"
+        )
+
         fallback_responses = {
-            'sql': {
-                'keywords': ['sql', 'query', 'select', 'insert', 'update', 'delete'],
-                'response': 'SQL (Structured Query Language) is used to manage relational databases. Key commands: SELECT (retrieve), INSERT (add), UPDATE (modify), DELETE (remove).',
-                'confidence': 0.92
+
+            "sql": {
+                "keywords": [
+                    "sql",
+                    "query",
+                    "select",
+                    "insert",
+                    "update",
+                    "delete"
+                ],
+
+                "response": (
+                    "SQL (Structured Query Language) "
+                    "is used to manage relational databases. "
+                    "Key commands: SELECT (retrieve), "
+                    "INSERT (add), UPDATE (modify), "
+                    "DELETE (remove)."
+                ),
+
+                "confidence": 0.92
             },
-            'join': {
-                'keywords': ['join', 'inner', 'left', 'right', 'outer'],
-                'response': 'JOINs combine rows from two or more tables. Types: INNER JOIN (matching rows only), LEFT JOIN (all left + matches), RIGHT JOIN (all right + matches), FULL OUTER JOIN (all rows).',
-                'confidence': 0.91
+
+            "join": {
+                "keywords": [
+                    "join",
+                    "inner",
+                    "left",
+                    "right",
+                    "outer"
+                ],
+
+                "response": (
+                    "JOINs combine rows from two or more "
+                    "tables. Types: INNER JOIN (matching "
+                    "rows only), LEFT JOIN (all left + "
+                    "matches), RIGHT JOIN (all right + "
+                    "matches), FULL OUTER JOIN "
+                    "(all rows)."
+                ),
+
+                "confidence": 0.91
             },
-            'normalization': {
-                'keywords': ['normal', 'normalization', '1nf', '2nf', '3nf', 'bcnf'],
-                'response': 'Normalization reduces redundancy. Normal Forms: 1NF (atomic values), 2NF (no partial dependencies), 3NF (no transitive dependencies).',
-                'confidence': 0.89
+
+            "normalization": {
+                "keywords": [
+                    "normal",
+                    "normalization",
+                    "1nf",
+                    "2nf",
+                    "3nf",
+                    "bcnf"
+                ],
+
+                "response": (
+                    "Normalization reduces redundancy. "
+                    "Normal Forms: 1NF (atomic values), "
+                    "2NF (no partial dependencies), "
+                    "3NF (no transitive dependencies)."
+                ),
+
+                "confidence": 0.89
             },
-            'key': {
-                'keywords': ['key', 'primary', 'foreign', 'unique', 'constraint'],
-                'response': 'Database keys maintain data integrity. PRIMARY KEY: unique identifier. FOREIGN KEY: references another table. UNIQUE KEY: ensures uniqueness.',
-                'confidence': 0.90
+
+            "key": {
+                "keywords": [
+                    "key",
+                    "primary",
+                    "foreign",
+                    "unique",
+                    "constraint"
+                ],
+
+                "response": (
+                    "Database keys maintain data integrity. "
+                    "PRIMARY KEY: unique identifier. "
+                    "FOREIGN KEY: references another table. "
+                    "UNIQUE KEY: ensures uniqueness."
+                ),
+
+                "confidence": 0.90
             },
-            'index': {
-                'keywords': ['index', 'performance', 'faster', 'lookup', 'optimization'],
-                'response': 'Database indexes improve query performance. Benefits: faster SELECT, WHERE filtering, JOINs. Drawback: slower INSERT/UPDATE/DELETE.',
-                'confidence': 0.88
+
+            "index": {
+                "keywords": [
+                    "index",
+                    "performance",
+                    "faster",
+                    "lookup",
+                    "optimization"
+                ],
+
+                "response": (
+                    "Database indexes improve query "
+                    "performance. Benefits: faster SELECT, "
+                    "WHERE filtering, and JOINs. "
+                    "Drawback: slower INSERT/UPDATE/DELETE."
+                ),
+
+                "confidence": 0.88
             },
-            'transaction': {
-                'keywords': ['transaction', 'acid', 'commit', 'rollback', 'atomic'],
-                'response': 'Transactions are atomic sequences of operations. ACID: Atomicity, Consistency, Isolation, Durability. Use COMMIT to save, ROLLBACK to undo.',
-                'confidence': 0.87
+
+            "transaction": {
+                "keywords": [
+                    "transaction",
+                    "acid",
+                    "commit",
+                    "rollback",
+                    "atomic"
+                ],
+
+                "response": (
+                    "Transactions are atomic sequences of "
+                    "operations. ACID: Atomicity, "
+                    "Consistency, Isolation, Durability. "
+                    "Use COMMIT to save, ROLLBACK to undo."
+                ),
+
+                "confidence": 0.87
             }
         }
 
         best_match = None
         best_score = 0.50
 
-        for key, response_data in fallback_responses.items():
-            match_count = sum(1 for kw in response_data['keywords'] if kw in query_lower)
-            score = response_data['confidence'] * (match_count / len(response_data['keywords']))
+        for key, response_data in (
+            fallback_responses.items()
+        ):
+
+            match_count = sum(
+                1
+                for keyword in response_data["keywords"]
+                if keyword in query_lower
+            )
+
+            score = (
+                response_data["confidence"]
+                * (
+                    match_count
+                    / len(response_data["keywords"])
+                )
+            )
+
             if score > best_score:
+
                 best_score = score
                 best_match = response_data
 
-        if best_match:
-            return JsonResponse({
-                'success': True,
-                'bot_response': best_match['response'],
-                'confidence': best_match['confidence'],
-                'sources': ['Database Systems Course'],
-                'source_type': 'keyword_match'
-            })
+        # ----------------------------------------------------
+        # Matching fallback
+        # ----------------------------------------------------
 
-        return JsonResponse({
-            'success': True,
-            'bot_response': 'I can help with SQL, JOINs, normalization, keys, indexes and transactions. Please ask a specific question!',
-            'confidence': 0.70,
-            'sources': ['Help System'],
-            'source_type': 'default'
-        })
+        if best_match:
+
+            answer = best_match["response"]
+            confidence = best_match["confidence"]
+
+            Message.objects.create(
+                session=session,
+                message_type="bot",
+                content=answer,
+                confidence_score=confidence
+            )
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "session_id": session.id,
+                    "bot_response": answer,
+                    "confidence": confidence,
+                    "sources": [
+                        "Database Systems Course"
+                    ],
+                    "source_type": "keyword_match"
+                }
+            )
+
+        # ----------------------------------------------------
+        # Default fallback
+        # ----------------------------------------------------
+
+        answer = (
+            "I can help with SQL, JOINs, "
+            "normalization, keys, indexes "
+            "and transactions. Please ask "
+            "a specific question!"
+        )
+
+        confidence = 0.70
+
+        Message.objects.create(
+            session=session,
+            message_type="bot",
+            content=answer,
+            confidence_score=confidence
+        )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "session_id": session.id,
+                "bot_response": answer,
+                "confidence": confidence,
+                "sources": ["Help System"],
+                "source_type": "default"
+            }
+        )
 
     except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        print(f"❌ ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({'error': str(e)}, status=500)
 
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Invalid JSON"
+            },
+            status=400
+        )
+
+    except Exception as e:
+
+        logger.exception(
+            "❌ Error while processing chat message: %s",
+            e
+        )
+
+        return JsonResponse(
+            {
+                "success": False,
+                "error": str(e)
+            },
+            status=500
+        )
+
+
+# ============================================================
+# RAG CHAT API
+# ============================================================
 
 @login_required
 def rag_chat_api(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            query = data.get('message', '').strip()
-            rag_engine = _get_rag_engine()
-            docs, distances = rag_engine.search(query) if rag_engine else ([], [])
-            result = rag_engine.generate_response(query, docs) if rag_engine else {}
-            if result:
-                return JsonResponse({
-                    'success': True,
-                    'answer': result['answer'],
-                    'confidence': result['confidence'],
-                    'sources': result['sources']
-                })
-            return JsonResponse({
-                'success': False,
-                'answer': 'No relevant documents found.',
-                'confidence': 0.0
-            })
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    return JsonResponse({'error': 'POST only'}, status=400)
 
+    if request.method != "POST":
+
+        return JsonResponse(
+            {
+                "error": "POST only"
+            },
+            status=400
+        )
+
+    try:
+
+        data = json.loads(
+            request.body
+        )
+
+        query = data.get(
+            "message",
+            ""
+        ).strip()
+
+        if not query:
+
+            return JsonResponse(
+                {
+                    "success": False,
+                    "answer": "Empty message.",
+                    "confidence": 0.0
+                },
+                status=400
+            )
+
+        rag_engine = _get_rag_engine()
+
+        # ----------------------------------------------------
+        # RAG unavailable
+        # ----------------------------------------------------
+
+        if rag_engine is None:
+
+            return JsonResponse(
+                {
+                    "success": False,
+                    "answer": (
+                        "The RAG engine is currently "
+                        "unavailable."
+                    ),
+                    "confidence": 0.0,
+                    "sources": []
+                },
+                status=503
+            )
+
+        # ----------------------------------------------------
+        # Retrieve top 5 chunks
+        # ----------------------------------------------------
+
+        docs, scores = rag_engine.search(
+            query,
+            k=5
+        )
+
+        # ----------------------------------------------------
+        # Generate response
+        # ----------------------------------------------------
+
+        result = rag_engine.generate_response(
+            query,
+            docs,
+            scores
+        )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "answer": result["answer"],
+                "confidence": result["confidence"],
+                "sources": result["sources"]
+            }
+        )
+
+    except json.JSONDecodeError:
+
+        return JsonResponse(
+            {
+                "error": "Invalid JSON"
+            },
+            status=400
+        )
+
+    except Exception as e:
+
+        logger.exception(
+            "❌ RAG API error: %s",
+            e
+        )
+
+        return JsonResponse(
+            {
+                "error": str(e)
+            },
+            status=500
+        )
+
+
+# ============================================================
+# CHAT DASHBOARD
+# ============================================================
 
 @login_required
 def chat_dashboard(request):
-    if ChatSession is None:
-        return render(request, 'chat/dashboard.html', {'sessions': []})
-    sessions = ChatSession.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'chat/dashboard.html', {
-        'sessions': sessions,
-        'total_sessions': sessions.count(),
-        'total_messages': Message.objects.filter(
-            session__user=request.user).count() if Message else 0
-    })
 
+    if ChatSession is None:
+
+        return render(
+            request,
+            "chat/dashboard.html",
+            {
+                "sessions": []
+            }
+        )
+
+    sessions = (
+        ChatSession.objects
+        .filter(
+            user=request.user
+        )
+        .order_by(
+            "-created_at"
+        )
+    )
+
+    total_messages = 0
+
+    if Message:
+
+        total_messages = (
+            Message.objects
+            .filter(
+                session__user=request.user
+            )
+            .count()
+        )
+
+    return render(
+        request,
+        "chat/dashboard.html",
+        {
+            "sessions": sessions,
+            "total_sessions": sessions.count(),
+            "total_messages": total_messages
+        }
+    )
+
+
+# ============================================================
+# SESSION DETAIL
+# ============================================================
 
 @login_required
-def session_detail(request, session_id):
+def session_detail(
+    request,
+    session_id
+):
+
     if ChatSession is None:
-        return render(request, 'chat/session_detail.html', {
-            'session': None, 'error': 'Chat not available'
-        })
+
+        return render(
+            request,
+            "chat/session_detail.html",
+            {
+                "session": None,
+                "error": "Chat not available"
+            }
+        )
+
     try:
-        session = ChatSession.objects.get(id=session_id, user=request.user)
-        if request.method == 'POST' and request.POST.get('action') == 'delete':
+
+        session = (
+            ChatSession.objects.get(
+                id=session_id,
+                user=request.user
+            )
+        )
+
+        # ----------------------------------------------------
+        # Delete session
+        # ----------------------------------------------------
+
+        if (
+            request.method == "POST"
+            and request.POST.get("action") == "delete"
+        ):
+
             session.delete()
-            from django.shortcuts import redirect
-            return redirect('chat:dashboard')
-        return render(request, 'chat/session_detail.html', {'session': session})
+
+            return redirect(
+                "chat:dashboard"
+            )
+
+        return render(
+            request,
+            "chat/session_detail.html",
+            {
+                "session": session
+            }
+        )
+
     except ChatSession.DoesNotExist:
-        return render(request, 'chat/session_detail.html', {
-            'session': None, 'error': 'Session not found'
-        }, status=404)
+
+        return render(
+            request,
+            "chat/session_detail.html",
+            {
+                "session": None,
+                "error": "Session not found"
+            },
+            status=404
+        )
