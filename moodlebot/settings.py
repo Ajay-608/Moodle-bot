@@ -21,8 +21,11 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# --- Security settings (driven by environment variables) ---
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-super-secret-key-change-in-production')
+# --- Security settings (driven by environment variables) 
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
