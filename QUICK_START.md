@@ -1,167 +1,154 @@
-## MoodleBot - Quick Start Guide
-# Running on a New Laptop
+# MoodleBot — Quick Start Guide
 
-================================================================
-STEP 1 - INSTALL PYTHON
-================================================================
-Download Python 3.11 from https://www.python.org/downloads/
-During install - CHECK "Add Python to PATH"
-Verify: open terminal and run:
-  python --version
+**Live app:** https://moodle-bot-1zx9.onrender.com
+**Repo:** https://github.com/Ajay-608/Moodle-bot
 
-================================================================
-STEP 2 - CLONE THE PROJECT
-================================================================
-Open terminal and run:
+---
 
-  git clone https://github.com/Ajay-608/Moodle-bot.git
-  cd Moodle-bot
+## 1. Local Setup (run it on your own machine)
 
-================================================================
-STEP 3 - CREATE VIRTUAL ENVIRONMENT
-================================================================
-  python -m venv venv
+### Prerequisites
+- Python 3.11 (must match — newer versions break `faiss-cpu`)
+- Git
 
-Activate it:
-  Windows : venv\Scripts\activate.bat
-  Mac/Linux: source venv/bin/activate
+### Steps
 
-You should see (venv) at the start of your terminal line.
+```bash
+# 1. Clone the repo
+git clone https://github.com/Ajay-608/Moodle-bot.git
+cd Moodle-bot
 
-================================================================
-STEP 4 - INSTALL PYTHON PACKAGES
-================================================================
-  pip install -r requirements.txt
+# 2. Install dependencies
+python -m pip install -r requirements.txt
 
-This installs Django, FAISS, Sentence Transformers, etc.
-Takes 5-10 minutes first time.
+# 3. Create your local .env file (see section 2 below for what goes in it)
 
-================================================================
-STEP 5 - INSTALL OLLAMA (LOCAL AI)
-================================================================
-Go to: https://ollama.com/download
-Download and install for your operating system.
+# 4. Run database migrations
+python manage.py migrate
 
-Then download the AI model (1.3GB - one time only):
-  ollama pull llama3.2:1b
+# 5. Populate sample users, courses, and demo data
+python manage.py populate_sample_data
 
-Wait for download to complete (5-10 minutes).
+# 6. Index course text files into the database
+python index_text_files.py
 
-Windows: Ollama starts automatically in background after install.
-Mac/Linux: Run this in a separate terminal before step 9:
-  ollama serve
+# 7. Build the FAISS vector search index
+python build_index.py
 
-================================================================
-STEP 6 - CREATE .env FILE
-================================================================
-In your project folder, create a file called .env
-Add this content:
+# 8. Start the local server
+python manage.py runserver
+```
 
-  SECRET_KEY=moodlebot-secret-key-2024-xkq92plwm83
-  DEBUG=True
-  ALLOWED_HOSTS=localhost,127.0.0.1
+Visit `http://localhost:8000` and log in with one of the demo accounts below.
 
-No API key needed - MoodleBot runs locally!
+---
 
-================================================================
-STEP 7 - SET UP DATABASE
-================================================================
-  python manage.py migrate
+## 2. Environment Variables (`.env` file)
 
-================================================================
-STEP 8 - CREATE TEST USERS
-================================================================
-  python manage.py populate_sample_data
+Create a `.env` file in the project root with:
 
-This creates:
-  - 1 Admin account
-  - 2 Teacher accounts
-  - 5 Student accounts
-  - Sample chat sessions and data
+```
+SECRET_KEY=your-local-dev-secret-key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
 
-================================================================
-STEP 9 - ADD COURSE CONTENT
-================================================================
-Option A - Use text files (recommended):
-  Put your .txt course files in the media/ folder
-  Then run:
-    python index_text_files.py
+GROQ_API_KEY=your-groq-key
+LLM_MODEL=openai/gpt-oss-20b
 
-Option B - Use built-in dataset (140 DBMS topics):
-  python load_database_dataset.py
+OPENROUTER_API_KEY=your-openrouter-key
+OPENROUTER_MODEL=openrouter/free
+```
 
-================================================================
-STEP 10 - BUILD AI SEARCH INDEX
-================================================================
-  python build_index.py
+- Get a free Groq key: https://console.groq.com
+- Get a free OpenRouter key: https://openrouter.ai/keys
+- **Never commit this file** — it's already in `.gitignore`
 
-This converts all course content into vectors for AI search.
-Takes 2-5 minutes depending on content size.
+---
 
-================================================================
-STEP 11 - START THE SERVER
-================================================================
-  python manage.py runserver
+## 3. Default Demo Credentials
 
-Open browser and go to: http://localhost:8000
+| Role | Username | Password |
+|---|---|---|
+| Admin | `admin` | `admin123` |
+| Teacher | `prof_smith` | `teacher123` |
+| Student | `alice_student` | `student123` |
 
-================================================================
-LOGIN CREDENTIALS
-================================================================
-Role     Username         Password
-------   ---------------  ----------
-Admin    admin            admin123
-Teacher  prof_smith       teacher123
-Student  alice_student    student123
+⚠️ These are public in this repo — change them before using this for anything beyond a demo.
 
-================================================================
-EVERY TIME YOU WANT TO RUN THE PROJECT
-================================================================
-1. Open terminal
-2. Navigate to project folder:
-   cd path/to/Moodle-bot
-3. Activate venv:
-   venv\Scripts\activate.bat   (Windows)
-   source venv/bin/activate    (Mac/Linux)
-4. Start server:
-   python manage.py runserver
-5. Open: http://localhost:8000
+---
 
-Note: Ollama starts automatically on Windows.
-On Mac/Linux run "ollama serve" in a separate terminal first.
+## 4. How the Chatbot Works
 
-================================================================
-TROUBLESHOOTING
-================================================================
+1. User asks a question in the chat UI
+2. `rag_engine.search()` embeds the question (Sentence-Transformers) and finds the most relevant course content chunks (FAISS)
+3. `rag_engine.generate_response()` sends those chunks + the question to **Groq** (primary LLM)
+4. If Groq fails (rate limit, outage, bad key), it automatically retries with **OpenRouter** (fallback)
+5. If both fail, it returns a safe plain-text fallback response — the app never hard-crashes on a chat request
 
-Problem : "RAG unavailable: numpy dtype size changed"
-Fix     : pip install numpy==1.26.4
+---
 
-Problem : "RAG unavailable: cannot import cached_download"
-Fix     : pip install sentence-transformers==2.7.0
+## 5. Deploying Your Own Copy (Render)
 
-Problem : "RAG unavailable: huggingface-hub version"
-Fix     : pip install huggingface_hub==0.36.2
+1. Fork/clone the repo, push to your own GitHub
+2. Create a free account at render.com, connect your GitHub
+3. **New → Web Service**, select your repo
+4. **Build Command:**
+   ```
+   pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py populate_sample_data && python index_text_files.py && python build_index.py
+   ```
+5. **Start Command:**
+   ```
+   gunicorn moodlebot.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 1
+   ```
+6. **Environment Variables** (Render dashboard → Environment tab):
+   ```
+   SECRET_KEY=<generate a fresh one>
+   DEBUG=False
+   ALLOWED_HOSTS=<your-app-name>.onrender.com,localhost,127.0.0.1
+   PYTHON_VERSION=3.11.9
+   GROQ_API_KEY=<your key>
+   LLM_MODEL=openai/gpt-oss-20b
+   OPENROUTER_API_KEY=<your key>
+   OPENROUTER_MODEL=openrouter/free
+   ```
+7. Deploy. Once live, copy the assigned URL and update `ALLOWED_HOSTS` to match it exactly, then save (triggers a redeploy).
 
-Problem : Bot gives fallback answers only
-Fix     : Make sure Ollama is running
-          Windows: check system tray for Ollama icon
-          Mac/Linux: run "ollama serve" in separate terminal
+**Generate a fresh `SECRET_KEY` with:**
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(50))"
+```
 
-Problem : "Created empty FAISS index" on startup
-Fix     : Run python build_index.py then restart server
+---
 
-Problem : Port already in use
-Fix     : python manage.py runserver 8001
-          Then open http://localhost:8001
+## 6. Keeping It Awake (Free Tier Only)
 
-================================================================
-SYSTEM REQUIREMENTS
-================================================================
-OS      : Windows 10/11, macOS, Linux
-Python  : 3.10 or 3.11
-RAM     : Minimum 8GB (16GB recommended)
-Storage : 5GB free space (for AI model)
-Internet: Only needed for first-time package installation
+Render's free tier sleeps after ~15 minutes of inactivity, causing a 30–90 second delay on the next visit. To prevent this:
 
-================================================================
+1. Sign up at uptimerobot.com (free)
+2. Add a new **HTTP(s) monitor** pointing to your live URL
+3. Set check interval to **5 minutes**
+4. Save — your app will now stay awake continuously
+
+---
+
+## 7. Common Issues & Fixes
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `faiss-cpu` install fails | Wrong Python version | Set `PYTHON_VERSION=3.11.9` env var |
+| Build pulls huge CUDA packages | Default torch install | Already fixed via `--extra-index-url` CPU pin in `requirements.txt` |
+| `CSRF verification failed` | Missing trusted origins | Already fixed via `CSRF_TRUSTED_ORIGINS` in `settings.py` |
+| Chat returns `"Based on {source}: {query}"` | Both Groq and OpenRouter failed | Check API keys are valid and current in environment variables |
+| `401 Unauthorized` from Groq | Revoked/rotated key not updated | Update `GROQ_API_KEY` in Render's Environment tab |
+| Worker timeout on startup | Model loading takes >30s (gunicorn default) | Already fixed via `--timeout 120` in start command |
+| `Bad Request (400)` on live site | Domain not in `ALLOWED_HOSTS` | Add the exact live domain to `ALLOWED_HOSTS` env var |
+
+---
+
+## 8. Tech Stack Summary
+
+- **Backend:** Django 4.2.7, Django REST Framework
+- **RAG pipeline:** Sentence-Transformers (`all-MiniLM-L6-v2`) + FAISS
+- **LLM:** Groq (primary) + OpenRouter (fallback)
+- **Hosting:** Render (free tier) + UptimeRobot keep-alive
+- **Database:** SQLite

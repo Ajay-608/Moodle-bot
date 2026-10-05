@@ -1,102 +1,59 @@
-================================================================
-MOODLEBOT - PROJECT SUMMARY
-================================================================
-Version    : 2.0 - Ollama RAG
-Updated    : June 2026
-Author     : Ajay
-Repository : https://github.com/Ajay-608/Moodle-bot
-================================================================
+# MoodleBot — Deployment Change Summary
 
-WHAT IS MOODLEBOT?
-------------------
-MoodleBot is an AI-powered educational chatbot built with Django.
-Students ask questions about their course content and get instant
-natural language answers powered by a local AI model.
+## Live URL
+https://moodle-bot-1zx9.onrender.com
 
-It uses RAG (Retrieval-Augmented Generation):
-  1. Student asks a question
-  2. FAISS searches 2200+ course document chunks
-  3. Ollama AI reads relevant chunks and writes a natural answer
-  4. Student sees a conversational tutor-style response
+## What changed, and why
 
-TECHNOLOGY STACK
-----------------
-Backend        : Django 4.2.7 (Python)
-Database       : SQLite (development)
-AI Model       : Ollama llama3.2:1b (runs locally, free, offline)
-Embeddings     : Sentence Transformers all-MiniLM-L6-v2
-Vector Search  : FAISS (Facebook AI Similarity Search)
-Frontend       : HTML + CSS + JavaScript (AJAX)
+### 1. `rag_engine.py`
+- **Removed:** Ollama (local-only LLM, incompatible with cloud hosting)
+- **Added:** Groq as primary LLM provider, OpenRouter as automatic fallback
+- **Added:** Guard against `None`/empty API responses (fixed a crash: `'NoneType' object has no attribute 'strip'`)
+- Reads `GROQ_API_KEY`, `LLM_MODEL`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` from environment variables
 
-KEY FEATURES
-------------
-- Real-time AI chat with 88% accuracy
-- Role-based dashboards (Student / Teacher / Admin)
-- 2200+ course document chunks indexed and searchable
-- Learning gap tracking per student
-- Feedback system (1-5 star ratings)
-- TAM Survey for measuring user acceptance
-- Knowledge base management (upload course materials)
-- Completely free - no API key, no internet needed for AI
+### 2. `requirements.txt`
+- Trimmed from the original (which included unrelated packages like `tensorflow`, `torch` GPU build, `celery`, `redis`, `mysqlclient`, `opencv`, `google-generativeai` — none used by this project)
+- Added `--extra-index-url https://download.pytorch.org/whl/cpu` + pinned `torch==2.2.2` to force the CPU-only build (avoids pulling multi-GB CUDA packages on Render's GPU-less servers)
+- Added `gunicorn`, `whitenoise` (needed for production, weren't in original list)
 
-THREE USER ROLES
-----------------
-STUDENT  : Chat with bot, view learning gaps, rate responses
-TEACHER  : Monitor class performance, view top questions,
-           see struggling students, upload materials
-ADMIN    : Manage all users, view system stats, configure bot
+### 3. `moodlebot/settings.py`
+- `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` now read from environment variables instead of being hardcoded
+- Added `whitenoise` middleware + `STATICFILES_STORAGE` (serves CSS/JS correctly with `DEBUG=False`)
+- Added `CSRF_TRUSTED_ORIGINS` and `SECURE_PROXY_SSL_HEADER` (fixed CSRF errors caused by Render's HTTPS proxy setup)
+- Added `core.rate_limit_middleware.ChatRateLimitMiddleware` to `MIDDLEWARE`
+- Removed unused `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `OPENAI_API_KEY` settings (not used anywhere in the code)
 
-AI PIPELINE
------------
-Question → Sentence Transformer (384-dim vector)
-        → FAISS Index Search (top-3 chunks)
-        → Ollama llama3.2:1b (natural language generation)
-        → Clean conversational answer (88% confidence)
+### 4. `core/rate_limit_middleware.py` (new file)
+- Caps each visitor to 20 chat messages/hour to protect the shared Groq/OpenRouter free-tier quota from being exhausted by heavy testing or traffic bursts
 
-KNOWLEDGE BASE
---------------
-Source 1 : database_dataset.json (140 DBMS Q&A topics)
-Source 2 : Course PDF text files (2200+ chunks)
-           - Database Management System (DBMS).txt
-           - Information Systems.txt
+### 5. `.gitignore`
+- Fixed `*.txt` rule that was accidentally also blocking `requirements.txt` and `runtime.txt` from being committed
+- Removed blanket `media/` ignore — this folder holds the actual course content (`.txt` files) the RAG knowledge base is built from, so it needs to be tracked, not ignored
 
-SETUP COMMANDS (in order)
---------------------------
-pip install -r requirements.txt
-ollama pull llama3.2:1b
-python manage.py migrate
-python manage.py populate_sample_data
-python index_text_files.py
-python build_index.py
-python manage.py runserver
+### 6. `runtime.txt` (created, later superseded)
+- Originally added to pin Python 3.11 for Render
+- **Note:** Render no longer reads `runtime.txt` — the actual fix was setting the `PYTHON_VERSION=3.11.9` environment variable in Render's dashboard instead. The file is harmless to keep but isn't what's actually controlling the Python version now.
 
-TEST CREDENTIALS
-----------------
-Admin   : admin / admin123
-Teacher : prof_smith / teacher123
-Student : alice_student / student123
+### 7. `Procfile` (created)
+- Declares: `web: gunicorn moodlebot.wsgi:application --bind 0.0.0.0:$PORT`
+- Currently not the active start command (Render's dashboard Start Command overrides it — see below) — kept for documentation purposes
 
-IMPORTANT FILES
----------------
-rag_engine.py          - Core AI engine
-chat/views.py          - Chat request handler
-build_index.py         - FAISS index builder
-index_text_files.py    - PDF text indexer
-database_dataset.json  - 140 DBMS topics
-.env                   - Environment variables (not in GitHub)
+### 8. `chat/views.py`
+- Cosmetic only: renamed misleading `"✅ Using Gemini RAG"` log message and `'source_type': 'gemini_rag'` label to accurately reflect the actual engine (Groq/OpenRouter via `rag_engine.py`, not Gemini — Gemini was never actually used)
 
-KNOWN LIMITATIONS
------------------
-- Response time 5-15 seconds (CPU only, no GPU)
-- No real-time teacher chat intervention
-- CSV export not implemented
-- Quiz generation not implemented
+## Render dashboard configuration (not in the repo)
 
-FRS COMPLIANCE
---------------
-Student FRS    : 70/100
-Teacher FRS    : 80/100
-Admin FRS      : 75/100
-Overall        : 75%
+| Setting | Value |
+|---|---|
+| Build Command | `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py populate_sample_data && python index_text_files.py && python build_index.py` |
+| Start Command | `gunicorn moodlebot.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 1` |
+| Environment Variables | `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS=moodle-bot-1zx9.onrender.com,localhost,127.0.0.1`, `GROQ_API_KEY`, `LLM_MODEL=openai/gpt-oss-20b`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL=openrouter/free`, `PYTHON_VERSION=3.11.9` |
 
-================================================================
+## External services added
+
+- **UptimeRobot** — pings the app every 5 minutes to prevent Render's free-tier cold-start sleep
+
+## Known non-issues (don't "fix" these)
+
+- `google-api-core`/`tensorflow-intel` dependency warnings during local pip installs — harmless, from unrelated packages in your global Python environment, not used by this project
+- Default demo credentials (`admin/admin123` etc.) are still in the public README — low risk for a portfolio project, but worth changing if you want to lock it down further

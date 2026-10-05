@@ -74,7 +74,7 @@ class RAGEngine:
             print(f"Search error: {e}")
             return [], [1.0] * k
 
-    def _call_openai_style(self, url, api_key, model, prompt, timeout=30):
+    def _call_openai_style(self, url, api_key, model, prompt, timeout=30, max_tokens=150):
         """Shared caller for Groq and OpenRouter — both use the OpenAI chat format."""
         response = requests.post(
             url,
@@ -85,7 +85,7 @@ class RAGEngine:
             json={
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 150,
+                "max_tokens": max_tokens,
                 "temperature": 0.1
             },
             timeout=timeout
@@ -114,17 +114,18 @@ class RAGEngine:
 
         prompt = f"""You are MoodleBot, a friendly database systems tutor.
 
-Using the context below, answer the student's question in a natural
-conversational way. Do NOT use markdown headers, bullet symbols, or
-hashtags. Just write 2-3 plain sentences like a teacher explaining
-to a student.
+Using the context below, answer the student's question clearly and helpfully.
+When the question is about SQL or database syntax, include a short SQL code
+example formatted in a fenced code block (```sql ... ```). When comparing
+multiple things (e.g. JOIN types, normal forms, keys), use a markdown table.
+Keep prose explanation concise, then follow with the code/table where useful.
 
 CONTEXT:
 {context}
 
 QUESTION: {query}
 
-Answer in plain conversational sentences only."""
+Answer using markdown formatting (code blocks, tables) where it aids clarity."""
 
         answer = None
 
@@ -133,7 +134,7 @@ Answer in plain conversational sentences only."""
             if not self.groq_api_key:
                 raise RuntimeError("GROQ_API_KEY not set")
             answer = self._call_openai_style(
-                self.groq_url, self.groq_api_key, self.groq_model, prompt
+                self.groq_url, self.groq_api_key, self.groq_model, prompt, max_tokens=500
             )
             print(f"✅ Groq answered: {answer[:150]}")
         except Exception as e:
@@ -145,16 +146,14 @@ Answer in plain conversational sentences only."""
                     raise RuntimeError("OPENROUTER_API_KEY not set")
                 answer = self._call_openai_style(
                     self.openrouter_url, self.openrouter_api_key,
-                    self.openrouter_model, prompt
+                    self.openrouter_model, prompt, max_tokens=500
                 )
                 print(f"✅ OpenRouter answered: {answer[:150]}")
             except Exception as e2:
                 print(f"❌ OpenRouter also failed: {e2}")
 
         if answer:
-            answer = re.sub(r'#+\s*', '', answer)
-            answer = re.sub(r'\*\*', '', answer)
-            answer = re.sub(r'\n+', ' ', answer).strip()
+            answer = answer.strip()
         else:
             # --- Both providers failed: plain-text fallback ---
             titles = [doc.title for doc in context_docs]
