@@ -14,21 +14,62 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables (.env locally, real env vars on Render)
+# Load environment variables (.env locally, real environment variables on Render)
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# --- Security settings (driven by environment variables) 
+# ============================================================
+# SECURITY SETTINGS
+# ============================================================
+
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY environment variable is not set")
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+DEBUG = os.getenv("DEBUG", "False") == "True"
+
+# Supports both local development and Render deployment.
+# On Render, set:
+# ALLOWED_HOSTS=moodle-bot-1zx9.onrender.com
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        "ALLOWED_HOSTS",
+        "localhost,127.0.0.1"
+    ).split(",")
+    if host.strip()
+]
+
+
+# ============================================================
+# CSRF / HTTPS SETTINGS
+# ============================================================
+
+# Required for Django POST requests coming from the deployed
+# HTTPS Render domain.
+CSRF_TRUSTED_ORIGINS = [
+    "https://moodle-bot-1zx9.onrender.com",
+]
+
+# Render runs Django behind a proxy. This tells Django that the
+# original client request used HTTPS.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+
+# Secure cookies only when running in production/HTTPS.
+# Keep these disabled locally when using http://127.0.0.1:8000.
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+
+# ============================================================
+# APPLICATIONS
+# ============================================================
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -37,8 +78,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'rest_framework',
     'corsheaders',
+
     'core',
     'chat',
     'rag',
@@ -49,20 +92,34 @@ INSTALLED_APPS = [
     'api',
 ]
 
+
+# ============================================================
+# MIDDLEWARE
+# ============================================================
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # serves static files in production
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'core.rate_limit_middleware.ChatRateLimitMiddleware',  # protects Groq/OpenRouter quota
+
+    'core.rate_limit_middleware.ChatRateLimitMiddleware',
+
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+
 ROOT_URLCONF = 'moodlebot.urls'
+
+
+# ============================================================
+# TEMPLATES
+# ============================================================
 
 TEMPLATES = [
     {
@@ -80,16 +137,37 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = 'moodlebot.wsgi.application'
 
-# Database — SQLite (fine for a demo deployment; note Render's free tier
-# disk is not guaranteed persistent across deploys, so data may reset)
+
+# ============================================================
+# DATABASE
+# ============================================================
+
+# SQLite is currently used for this portfolio/demo deployment.
+#
+# IMPORTANT:
+# Render's free filesystem is not intended to provide reliable
+# persistent SQLite storage. Users, sessions, conversations,
+# and other database records may be lost if the service is
+# recreated or the filesystem is reset.
+#
+# PostgreSQL can be introduced later for persistent production
+# storage without changing the application's overall Django
+# authentication/session architecture.
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+# ============================================================
+# PASSWORD VALIDATION
+# ============================================================
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -106,45 +184,126 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+# ============================================================
+# INTERNATIONALIZATION
+# ============================================================
+
 LANGUAGE_CODE = 'en-us'
+
 TIME_ZONE = 'UTC'
+
 USE_I18N = True
+
 USE_TZ = True
 
-# --- Static & media files ---
+
+# ============================================================
+# STATIC FILES
+# ============================================================
+
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'static'
+]
+
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+STATICFILES_STORAGE = (
+    'whitenoise.storage.CompressedManifestStaticFilesStorage'
+)
+
+
+# ============================================================
+# MEDIA FILES
+# ============================================================
 
 MEDIA_URL = '/media/'
+
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# File upload settings
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+
+# ============================================================
+# FILE UPLOAD SETTINGS
+# ============================================================
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+# ============================================================
+# DEFAULT PRIMARY KEY
+# ============================================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- REST Framework ---
+
+# ============================================================
+# DJANGO REST FRAMEWORK
+# ============================================================
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
     ],
+
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-    ]
+    ],
 }
 
-# --- Login settings ---
+
+# ============================================================
+# LOGIN / LOGOUT SETTINGS
+# ============================================================
+
 LOGIN_URL = '/login/'
+
 LOGIN_REDIRECT_URL = '/'
+
 LOGOUT_REDIRECT_URL = '/login/'
 
-# NOTE: The old CELERY_BROKER_URL / CELERY_RESULT_BACKEND / OPENAI_API_KEY
-# settings were removed here — MoodleBot's rag_engine.py doesn't use Celery,
-# Redis, or the OpenAI SDK (it calls Groq/OpenRouter directly via `requests`
-# using GROQ_API_KEY / OPENROUTER_API_KEY from the environment). Removing
-# them avoids needing packages you don't actually use. If you add Celery
-# back later, reintroduce those two lines and add `celery` + `redis` to
-# requirements.txt.
+
+# ============================================================
+# CORS
+# ============================================================
+
+# Add the Render domain if your frontend/API requests require
+# cross-origin access.
+#
+# The Django templates themselves do not normally require CORS.
+# Keep this empty unless a separate frontend needs it.
+CORS_ALLOWED_ORIGINS = [
+    "https://moodle-bot-1zx9.onrender.com",
+]
+
+
+# ============================================================
+# AI API KEYS
+# ============================================================
+
+# The actual API keys are NOT stored in this file.
+#
+# rag_engine.py reads:
+#
+# GROQ_API_KEY
+# OPENROUTER_API_KEY
+#
+# Configure them through Render Environment Variables and
+# through a local .env file during development.
+
+
+# ============================================================
+# CELERY / REDIS / OPENAI
+# ============================================================
+
+# These settings are intentionally not configured because the
+# current MoodleBot implementation does not use:
+#
+# - Celery
+# - Redis
+# - OpenAI SDK
+#
+# rag_engine.py communicates with Groq/OpenRouter directly.
