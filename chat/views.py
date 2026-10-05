@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 import json
 import re
+import logging
 
 # Safe model imports
 try:
@@ -15,20 +16,29 @@ except ImportError:
     Message = None
     print("⚠️ Chat models unavailable")
 
-# RAG engine import
-try:
-    from rag_engine import rag_engine
-    print("✅ RAG engine loaded in chat views")
-except Exception as e:
-    rag_engine = None
-    print(f"⚠️ RAG unavailable: {e}")
-
 # Safe knowledge base import
 try:
     from knowledge.models import Document
 except ImportError:
     Document = None
     print("⚠️ Knowledge base unavailable")
+
+logger = logging.getLogger(__name__)
+_rag_engine = None
+_rag_engine_loaded = False
+
+
+def _get_rag_engine():
+    global _rag_engine, _rag_engine_loaded
+    if not _rag_engine_loaded:
+        try:
+            from rag_engine import rag_engine
+        except Exception:
+            logger.exception("RAG engine could not be initialized")
+        else:
+            _rag_engine = rag_engine
+        _rag_engine_loaded = True
+    return _rag_engine
 
 
 @login_required
@@ -53,7 +63,8 @@ def send_message(request):
         if not query:
             return JsonResponse({'error': 'Empty message'}, status=400)
 
-        # RAG engine (Groq primary, OpenRouter fallback — see rag_engine.py)
+        # Load the RAG engine only when a chat request needs it.
+        rag_engine = _get_rag_engine()
         if rag_engine is not None:
             print(f"✅ Using RAG Engine")
             docs, distances = rag_engine.search(query, k=1)
@@ -143,6 +154,7 @@ def rag_chat_api(request):
         try:
             data = json.loads(request.body)
             query = data.get('message', '').strip()
+            rag_engine = _get_rag_engine()
             docs, distances = rag_engine.search(query) if rag_engine else ([], [])
             result = rag_engine.generate_response(query, docs) if rag_engine else {}
             if result:
