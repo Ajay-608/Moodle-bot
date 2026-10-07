@@ -65,7 +65,8 @@ def build_index():
     if set(index_ids.tolist()) != set(document_ids.tolist()):
         raise RuntimeError("FAISS IDs do not match the Document primary keys.")
 
-    index_path = Path(settings.BASE_DIR) / "rag_index.faiss"
+    index_path = Path(settings.FAISS_INDEX_PATH)
+    index_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = index_path.with_name(f".{index_path.name}.tmp")
     try:
         faiss.write_index(index, str(temporary_path))

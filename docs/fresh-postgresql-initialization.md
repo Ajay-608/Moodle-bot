@@ -1,161 +1,229 @@
-# Fresh PostgreSQL initialization and AWS deployment
+# Fresh Render PostgreSQL initialization and deployment
 
-Production is intentionally initialized with a **fresh Amazon RDS PostgreSQL
-database**. The old SQLite database is legacy/archive data and is not migrated.
-Old users, profiles, chat history, feedback, learning data, surveys, Document
-IDs, and FAISS IDs do not appear in production. Create a new superuser in
-PostgreSQL; users register normally after launch.
+## Current target and data policy
 
-The committed `media/*.txt` course files are the authoritative source for the
-existing chunked course corpus: they are the source consumed by the prior
-`index_text_files.py` setup and represent the larger source materials. The
-separate `database_dataset.json` is an alternate curated Q&A corpus with its
-own legacy loaders. It is not part of the production initialization path.
-
-## A. Local development
-
-Install dependencies, copy `.env.example` to `.env`, set a fresh local
-`SECRET_KEY`, set `DEBUG=True`, and leave `DATABASE_URL` blank to use the local
-SQLite fallback.
-
-```powershell
-python -m pip install -r requirements.txt
-python manage.py migrate
-python manage.py populate_sample_data
-python manage.py runserver
-```
-
-`populate_sample_data` is for local development only and refuses to run with
-`DEBUG=False`. It does not reset existing users, passwords, roles, profiles,
-chats, messages, Documents, learning gaps, feedback, or surveys.
-
-## B. Fresh PostgreSQL initialization
-
-First create/configure a fresh PostgreSQL database (RDS when AWS resources are
-created). Install the application dependencies and supply `DATABASE_URL`,
-`SECRET_KEY`, `ALLOWED_HOSTS`, and `CSRF_TRUSTED_ORIGINS` through the trusted
-process environment or an approved secret manager. Also configure `DEBUG=False`
-and the AI provider secrets needed by the application. Do not put real
-credentials in source files, `.env.example`, Git, or logs.
-
-The accepted URL form is:
+The current planned production architecture is:
 
 ```text
-postgresql://DB_USER:DB_PASSWORD@DB_HOST:5432/DB_NAME?sslmode=require
+GitHub
+  ↓
+Render Web Service
+  ↓
+Gunicorn
+  ↓
+Django
+  ↓
+fresh Render PostgreSQL
 ```
 
-Configure the production environment securely (for example, via the EC2
-service's environment/secret configuration after EC2 exists):
+This is a runbook only. No Render service or database has been created or
+deployed. Prior AWS EC2/RDS/Nginx guidance is superseded and is not the current
+deployment target.
+
+Production starts with a fresh PostgreSQL database. Do not import SQLite
+fixtures or migrate old SQLite data. Old users/password hashes, profiles,
+chats/messages, Documents, feedback, learning gaps, surveys, primary keys, and
+the old `rag_index.faiss` are not reused. Create a new superuser. Public
+registration creates student accounts; administrators control teacher and
+administrator privileges.
+
+The committed `media/*.txt` files are the authoritative knowledge source.
+`database_dataset.json` is an alternate legacy corpus and is not part of
+production initialization.
+
+## Phase 1 — GitHub
+
+The intended repository is `Ajay-608/Moodle-bot`. Use the branch containing
+the reviewed Render conversion. The current working branch is
+`agents/moodlebot-login-page-loading-problem-i-have-an`; local uncommitted
+changes cannot be built by Render until they are reviewed and pushed.
+
+No `render.yaml` is included. Configure services manually in the Render
+Dashboard; this avoids creating services/databases just by applying a
+Blueprint.
+
+## Phase 2 — Render PostgreSQL
+
+1. Create a new Render PostgreSQL database manually.
+2. Prefer the internal connection URL when the database and Web Service share
+   a Render region. Keep its credentials secret.
+3. Add the database URL to the Web Service's `DATABASE_URL` environment
+   variable in Render. Do not commit or print the value.
+
+The Django settings select PostgreSQL from `DATABASE_URL`. SQLite is only the
+local-development fallback when `DEBUG=True`; startup fails if `DATABASE_URL`
+is missing with `DEBUG=False`.
+
+## Phase 3 — Render Web Service
+
+Create a Web Service connected to the repository and reviewed branch. Choose
+Python 3 and set `PYTHON_VERSION=3.11.9`, matching the project's FAISS/Torch
+dependency pins and `runtime.txt`.
+
+Configure these exact commands:
+
+**Build Command**
 
 ```text
-DATABASE_URL=<fresh-PostgreSQL-connection-URL>
-SECRET_KEY=<fresh-secret>
-ALLOWED_HOSTS=<actual-hostname>
-CSRF_TRUSTED_ORIGINS=https://<actual-hostname>
-DEBUG=False
-GROQ_API_KEY=<provider-secret>
-OPENROUTER_API_KEY=<provider-secret>
+pip install -r requirements.txt && python manage.py collectstatic --noinput
 ```
 
-These are variable names and placeholders, not shell assignments or real
-credentials. Do not paste secrets into a shell command, source file, or log.
+**Start Command**
 
-The settings use PostgreSQL when `DATABASE_URL` is set, use SQLite only when
-`DEBUG=True` for local development, and fail startup if `DATABASE_URL` is
-missing with `DEBUG=False`. With the environment configured and the working
-directory set to the project root, run these commands in order against the
-fresh PostgreSQL database:
+```text
+gunicorn --bind 0.0.0.0:$PORT moodlebot.wsgi:application
+```
 
-```powershell
-python -m pip install -r requirements.txt
+Render requires a public Web Service to listen on `0.0.0.0`; `$PORT` is
+provided by Render ([port binding documentation](https://render.com/docs/web-services)).
+Do not hard-code a port. `gunicorn` and the required
+database, static, FAISS, and embedding packages are already in
+`requirements.txt`.
+
+### Environment variables
+
+Configure these in the Render Web Service environment:
+
+| Name | Value |
+|---|---|
+| `SECRET_KEY` | A newly generated secret, stored only in Render |
+| `DEBUG` | `False` |
+| `DATABASE_URL` | The fresh Render PostgreSQL internal connection URL |
+| `ALLOWED_HOSTS` | The actual Render hostname, without `https://` |
+| `CSRF_TRUSTED_ORIGINS` | The actual HTTPS origin, including `https://` |
+| `GROQ_API_KEY` | Groq key if Groq is used |
+| `OPENROUTER_API_KEY` | OpenRouter key if OpenRouter fallback is used |
+| `LLM_MODEL` | Optional; code default is `llama-3.1-8b-instant` |
+| `OPENROUTER_MODEL` | Optional; code default is `meta-llama/llama-3.1-8b-instruct:free` |
+| `CORS_ALLOWED_ORIGINS` | Optional comma-separated origins only if a cross-origin client is used |
+| `FAISS_INDEX_PATH` | Set to `/var/data/rag_index.faiss` when using the persistent disk below |
+| `PYTHON_VERSION` | `3.11.9` for the Render Python runtime |
+
+At least one provider API key is needed for hosted model responses. The
+`SECRET_KEY` and database URL must never be added to `.env.example`, source
+files, or logs. `.env.example` contains placeholders only. The code defaults
+`DEBUG` to `False`, so a missing Render setting does not accidentally enable
+debug mode.
+
+After Render assigns the service hostname, set `ALLOWED_HOSTS` to that
+hostname (no scheme) and set `CSRF_TRUSTED_ORIGINS` to its HTTPS origin.
+Do not use an invented hostname. `SECURE_PROXY_SSL_HEADER` and secure session
+and CSRF cookies are already configured for a TLS-terminating proxy.
+
+### Static files and health checks
+
+Django's existing WhiteNoise middleware serves the output of
+`collectstatic`; `STATIC_ROOT` is `staticfiles/`. Render does not need Nginx.
+The service logs to stdout/stderr, which Render captures.
+
+There is no dedicated health URL such as `/api/health`. Keep Render's default
+TCP port health check; do not configure a nonexistent route. `/login/` is a
+public page but is not a database-readiness check.
+
+## Phase 4 — One-time database initialization
+
+The Build Command does not run migrations or seed data. After the first Web
+Service deploy, open the service's Dashboard **Shell** for the live instance
+(not an isolated ephemeral shell), verify it has the configured
+`DATABASE_URL`, and run these once, in order:
+
+```text
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py initialize_knowledge_base
 python build_index.py
 python manage.py check
-python manage.py test
-python manage.py collectstatic --noinput
 ```
 
-The new administrator is created directly in PostgreSQL. No previous user
-account or password is imported. Django creates the authentication superuser;
-when that account first reaches an application role-aware view, MoodleBot
-creates its missing `UserProfile` with the admin role.
+`createsuperuser` is interactive. Do not create a default production account
+or put admin credentials in source. This procedure neither imports SQLite nor
+runs `populate_sample_data`.
 
-`initialize_knowledge_base` reads `media/*.txt` in deterministic filename
-order, normalizes whitespace, and splits each source into 500-character
-chunks with stable source/part titles and per-file chunk numbers. PostgreSQL
-assigns fresh Document primary keys. It runs atomically and refuses to run if
-any Documents already exist; it never deletes or updates existing content. If
-the command fails, diagnose the problem before retrying. The legacy loaders
-`index_text_files.py`, `load_database_dataset.py`, and
-`manage.py load_database_topics` are not part of production initialization;
-they can overwrite/delete content and/or only support local SQLite.
+`initialize_knowledge_base` reads committed text files in deterministic
+filename order, normalizes whitespace, and creates 500-character chunks
+atomically. PostgreSQL assigns new Document IDs. The command refuses to run
+when any Documents already exist and never deletes/replaces them.
 
-## C. Knowledge documents/chunks and FAISS
+## Phase 5 — FAISS generation and storage
 
-`build_index.py` requires the active database to be PostgreSQL and fails if it
-has zero Documents. It embeds every current Document using
-`all-MiniLM-L6-v2` (384 dimensions) with normalized vectors, maps each vector
-to the new PostgreSQL `Document.id`, verifies dimensions, unique IDs, exact ID
-set and count, then atomically writes a new `rag_index.faiss`. Never copy or
-reuse the old SQLite FAISS file. Rebuild the index from PostgreSQL whenever
-the Document corpus changes or the EC2 filesystem/index is replaced.
+`build_index.py` uses the database selected by `DATABASE_URL` and refuses a
+non-PostgreSQL database or an empty Documents table. It loads all current
+PostgreSQL Documents, generates normalized `all-MiniLM-L6-v2` embeddings
+(384 dimensions), maps each vector to the corresponding PostgreSQL
+`Document.id`, verifies the exact ID set, count, dimensions, uniqueness, and
+finite values, then atomically writes `FAISS_INDEX_PATH`.
 
-## D. AWS deployment preparation (future; not performed)
+The generated file is not committed. The old SQLite FAISS index is not used.
+The chat code reports an explicit error if the generated index is missing or
+invalid; it does not silently return a keyword/default response as if RAG had
+succeeded.
 
-The intended architecture is:
+### Render filesystem implications
+
+Render's default service filesystem is ephemeral. Files written there are lost
+on redeploy/restart ([Render disk documentation](https://render.com/docs/disks));
+a Free Web Service also loses local changes on spin-down
+([Free instance limitations](https://render.com/docs/free)).
+The simplest persistent option for this single-instance design is a Render
+persistent disk:
+
+1. Choose a compatible paid Web Service plan (check current Render plan
+   availability/pricing; no price or free availability is promised).
+2. Attach a disk mounted at `/var/data`.
+3. Set `FAISS_INDEX_PATH=/var/data/rag_index.faiss`.
+4. Run `python build_index.py` from the Dashboard Shell attached to the live
+   service instance after database initialization. Shell/SSH availability
+   depends on the service type and plan
+   ([Render shell documentation](https://render.com/docs/ssh)).
+
+Keep this local-index Web Service to one instance: a mounted local disk and
+FAISS file are not a shared index across scaled service instances.
+Render notes that attaching a disk also prevents zero-downtime deploys, so
+expect a brief service interruption during deploys
+([disk limitations](https://render.com/docs/disks)).
+
+Only files under the mount path persist. Do not use Render's isolated
+ephemeral shell for this build: its files are discarded when that shell exits
+and are not the live Web Service filesystem. Without a persistent disk, rerun
+`python build_index.py` against the active instance after each redeploy,
+restart, or spin-down before RAG chat is available. The application remains
+available for non-RAG pages while the index is absent. Once the file exists,
+the next chat request loads it into the process; a service restart is not
+needed just to refresh the in-memory index.
+
+The index can be checked from the service shell:
 
 ```text
-Internet
-   ↓
-Nginx
-   ↓
-Gunicorn
-   ↓
-Django
-   ↓
-Amazon RDS PostgreSQL
+python manage.py shell -c "from knowledge.models import Document; print('PostgreSQL Documents:', Document.objects.count())"
+python manage.py shell -c "import faiss; from django.conf import settings; index = faiss.read_index(str(settings.FAISS_INDEX_PATH)); print('FAISS vectors:', index.ntotal)"
 ```
 
-This is a plan only. No RDS or EC2 resource, DNS record, HTTPS certificate, or
-deployment exists or has been configured or tested. After resources are
-created, run Gunicorn as a service for `moodlebot.wsgi:application`, bind it
-to a local/private interface, and configure Nginx as the reverse proxy.
-Restrict RDS network access to the application host/security group. Keep the
-freshly built FAISS index on the EC2 filesystem initially.
+The printed Document and vector counts should match. The build command itself
+also checks the exact primary-key set and count.
 
-For example, the Gunicorn service can start the application with:
+## Phase 6 — Production validation
 
-```bash
-gunicorn moodlebot.wsgi:application --bind 127.0.0.1:8000 --workers 1 --timeout 120
-```
+After setup:
 
-Configure Nginx to proxy to that local Gunicorn listener; do not expose the
-Gunicorn port publicly. Nginx must set `X-Forwarded-Proto` correctly for
-Django's proxy HTTPS setting. Secure cookies are enabled when `DEBUG=False`.
-Use actual hostname and secret values only after those are configured securely;
-no endpoint, username, password, IP, ARN, domain, or secret is assumed here.
+1. Open the actual Render service URL and confirm the login page loads.
+2. Register a student account and verify normal login/logout.
+3. Sign in as the newly created superuser and verify admin access.
+4. Ask an in-scope database-course question and verify retrieved sources.
+5. Ask an out-of-scope question and inspect the response behavior.
+6. Check Render logs for database, static-file, embedding, or provider errors.
 
-Users register normally after the application goes live. Public registration
-creates student accounts only; administrators control teacher/admin accounts.
-Do not add fixture import, `populate_sample_data`, `index_text_files.py`, or
-the legacy dataset loaders to the production deployment workflow.
+Do not claim PostgreSQL connectivity, a deployed service, or a working hosted
+RAG index until these steps have actually been run.
 
-## E. Normal future deployments
+## Normal future deployments
 
-Once initialized, routine code updates may run:
+The normal Build and Start Commands above do not run migrations,
+`createsuperuser`, `initialize_knowledge_base`, sample-data seeding, SQLite
+fixture export/import, or legacy content loaders. Run schema migrations as a
+controlled operation when model changes require them. Rebuild the FAISS index
+after corpus updates, and after restarts if the service is not using a
+persistent disk.
 
-```powershell
-python manage.py migrate
-python manage.py collectstatic --noinput
-```
-
-Do not rerun the one-time knowledge initializer after content exists. Rebuild
-FAISS from the active PostgreSQL data with `python build_index.py` only when
-the Document corpus/index needs updating. Normal deployments never import
-SQLite fixtures or recreate Document rows.
-
-No AWS resources, PostgreSQL connection, migration, EC2 deployment, Gunicorn
-service, Nginx configuration, DNS, or HTTPS setup has been performed by this
-runbook.
+`populate_sample_data`, `index_text_files.py`, `load_database_dataset.py`,
+`manage.py load_database_topics`, and the SQLite fixture/audit scripts are
+local/legacy/optional tools only, not normal production commands.

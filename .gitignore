@@ -3,7 +3,10 @@
 !.env.example
 db.sqlite3
 *.sqlite3
+*.sqlite
 venv/
+.venv/
+env/
 __pycache__/
 *.pyc
 *.faiss
@@ -25,11 +28,15 @@ backups/
 *.log
 *.dump
 *.dump.*
+*.sql
 *.sql.gz
 *.backup
 *.bak
 *.export.*
 .aws/
+credentials/
+credentials.json
+token.json
 *.pem
 *.p12
 *.pfx

@@ -1,39 +1,55 @@
-MOODLEBOT — CURRENT DEPLOYMENT READINESS
-========================================
+MOODLEBOT — RENDER DEPLOYMENT PREPARATION
+=========================================
 
-Production target (planned, not deployed):
+Current target (planned, not deployed):
 
-Internet
-  -> Nginx
+GitHub
+  -> Render Web Service
   -> Gunicorn
   -> Django
-  -> Amazon RDS PostgreSQL
+  -> fresh Render PostgreSQL
 
-Production initialization uses a fresh PostgreSQL database. The old SQLite
-database is local/archive data only and is not migrated. Existing SQLite
-users/profiles, chats/messages, Documents, feedback, learning gaps, surveys,
-and primary keys will not appear in PostgreSQL. A new superuser is created
-directly in PostgreSQL; users register normally after launch.
+Render build command:
+pip install -r requirements.txt && python manage.py collectstatic --noinput
 
-The committed media/*.txt files are the production knowledge source.
-`python manage.py initialize_knowledge_base` creates new Documents and chunks
-on a fresh database and refuses to run if any Documents already exist.
-PostgreSQL assigns fresh Document IDs. Run `python build_index.py` afterward
-to create a new FAISS index using all-MiniLM-L6-v2 (384 dimensions) and mapping
-PostgreSQL Document.id values to FAISS IDs. The old `rag_index.faiss` is not
-used.
+Render start command:
+gunicorn --bind 0.0.0.0:$PORT moodlebot.wsgi:application
 
-Fresh PostgreSQL initialization steps and required environment variables:
-`docs/fresh-postgresql-initialization.md`
+The Web Service uses Render's assigned PORT. Django serves collected static
+files through WhiteNoise; Nginx is not part of this Render setup. Production
+settings require SECRET_KEY and DATABASE_URL when DEBUG=False. Set DEBUG=False
+and all secrets in the Render environment, not in Git.
 
-`populate_sample_data` is local-development-only. Destructive legacy content
-loaders are not part of production initialization or normal deployments.
-Optional SQLite migration/export scripts are retained as legacy local tools
-only; production does not depend on them.
+The production PostgreSQL database is fresh. SQLite data is not migrated:
+old users/password hashes, chats/messages, Documents, feedback, learning gaps,
+surveys, primary keys, and the old FAISS index are not carried over. Create a
+new superuser. Initialize the knowledge corpus once with
+`python manage.py initialize_knowledge_base`; it uses committed media/*.txt,
+creates normalized 500-character chunks with fresh PostgreSQL IDs, and
+refuses to run if Documents already exist.
 
-AWS RDS, EC2, DNS, HTTPS, Nginx/Gunicorn deployment, and PostgreSQL
-connectivity have not been created, configured, or tested. No AWS resource
-identifiers, addresses, endpoints, or credentials are specified here.
+Run `python build_index.py` after initialization. It indexes the current
+PostgreSQL Documents using all-MiniLM-L6-v2 (384 dimensions), uses each
+Document.id as its FAISS ID, validates the ID set/count/dimensions, and writes
+the generated index atomically. It does not use the old SQLite index.
 
-Historical Render deployment notes were intentionally removed from this
-current-readiness summary. The old deployment is not the production target.
+Render's default filesystem is ephemeral. Configure a persistent disk
+mounted at /var/data and set FAISS_INDEX_PATH=/var/data/rag_index.faiss if the
+index must survive deploys/restarts. Compatible persistent disks require a
+paid service plan and this local index design is single-instance only.
+Without a disk, rebuild the index after every redeploy, restart, or
+free-service spin-down. The index is generated runtime data and must not be
+committed.
+
+Local development can use SQLite and local-only populate_sample_data.
+Production does not run sample-data seeding, fixture import, or destructive
+legacy loaders. The SQLite export/validation scripts remain optional legacy
+tools and are not part of deployment.
+
+There is no render.yaml: the current plan is manual Dashboard setup so no
+database or service is created by applying a Blueprint. Render's default TCP
+health check is used; the project has no dedicated health endpoint.
+
+No Render service/database has been created, connected, or deployed. Prior AWS
+EC2/RDS and Nginx instructions are superseded and are not the current target.
+Check current Render pricing and availability before creating resources.

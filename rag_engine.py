@@ -10,10 +10,12 @@ from knowledge.models import Document
 
 class RAGEngine:
     def __init__(self):
+        self.initialization_error = None
+        self.model = None
+        self.index = None
         try:
             self.model = SentenceTransformer('all-MiniLM-L6-v2')
             self.dimension = 384
-            self.index = None
 
             # --- Groq (primary) ---
             self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
@@ -31,24 +33,30 @@ class RAGEngine:
             self._safe_setup()
             print("✅ RAG Engine ready!")
         except Exception as e:
+            self.initialization_error = e
             print(f"⚠️ RAG setup failed: {e}")
-            self.model = None
-            self.index = None
 
     def _safe_setup(self):
-        index_path = os.path.join(settings.BASE_DIR, 'rag_index.faiss')
-        if os.path.exists(index_path):
-            loaded_index = faiss.read_index(index_path)
-            if not isinstance(loaded_index, faiss.IndexIDMap2):
-                raise RuntimeError(
-                    "The FAISS index does not contain Document primary-key IDs; "
-                    "rebuild it with build_index.py."
-                )
-            self.index = loaded_index
-            print("✅ Loaded FAISS index with Document primary-key IDs")
-            return
-        self.index = faiss.IndexIDMap2(faiss.IndexFlatL2(self.dimension))
-        print("✅ Created empty FAISS index")
+        index_path = settings.FAISS_INDEX_PATH
+        if not os.path.isfile(index_path):
+            raise FileNotFoundError(
+                f"FAISS index not found at {index_path}. Build it from the "
+                "active PostgreSQL Documents with 'python build_index.py'."
+            )
+
+        loaded_index = faiss.read_index(str(index_path))
+        if not isinstance(loaded_index, faiss.IndexIDMap2):
+            raise RuntimeError(
+                "The FAISS index does not contain Document primary-key IDs; "
+                "rebuild it with build_index.py."
+            )
+        if loaded_index.d != self.dimension or loaded_index.ntotal == 0:
+            raise RuntimeError(
+                "The FAISS index is empty or has an unexpected embedding "
+                "dimension; rebuild it with build_index.py."
+            )
+        self.index = loaded_index
+        print(f"✅ Loaded FAISS index with Document primary-key IDs from {index_path}")
 
     def clean_text(self, text):
         text = re.sub(r'#+\s*', '', text)
@@ -58,8 +66,20 @@ class RAGEngine:
         return text.strip()
 
     def search(self, query, k=3):
-        if not self.model or not self.index:
-            return [], [1.0] * k
+        if not self.model:
+            raise RuntimeError(
+                "RAG embedding model is unavailable; check the service logs."
+            ) from self.initialization_error
+        if not self.index:
+            try:
+                self._safe_setup()
+            except Exception as error:
+                self.initialization_error = error
+                raise RuntimeError(
+                    "FAISS index is unavailable; build it from PostgreSQL "
+                    "Documents with 'python build_index.py'."
+                ) from error
+            self.initialization_error = None
         try:
             query_embedding = self.model.encode(
                 [query],

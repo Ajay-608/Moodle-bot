@@ -1,6 +1,11 @@
+import importlib
+import sys
 import tempfile
+from unittest.mock import patch
 from pathlib import Path
 
+import faiss
+import numpy as np
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -204,3 +209,46 @@ class AuthenticationFlowTests(TestCase):
         self.assertEqual(Document.objects.count(), 1)
         original.refresh_from_db()
         self.assertEqual(original.content, 'Keep this production document.')
+
+    def test_rag_search_reports_missing_faiss_index(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            index_path = Path(temporary_directory) / 'rag_index.faiss'
+            with override_settings(FAISS_INDEX_PATH=index_path):
+                previous_module = sys.modules.pop('rag_engine', None)
+                try:
+                    with patch('builtins.print'), patch(
+                        'sentence_transformers.SentenceTransformer'
+                    ):
+                        rag_module = importlib.import_module('rag_engine')
+                    with self.assertRaisesRegex(RuntimeError, 'FAISS index is unavailable'):
+                        rag_module.rag_engine.search('What is SQL?')
+                finally:
+                    sys.modules.pop('rag_engine', None)
+                    if previous_module is not None:
+                        sys.modules['rag_engine'] = previous_module
+
+    def test_rag_search_rejects_faiss_index_with_wrong_dimension(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            index_path = Path(temporary_directory) / 'rag_index.faiss'
+            wrong_dimension_index = faiss.IndexIDMap2(faiss.IndexFlatL2(128))
+            wrong_dimension_index.add_with_ids(
+                np.zeros((1, 128), dtype=np.float32),
+                np.array([1], dtype=np.int64),
+            )
+            faiss.write_index(wrong_dimension_index, str(index_path))
+
+            with override_settings(FAISS_INDEX_PATH=index_path):
+                previous_module = sys.modules.pop('rag_engine', None)
+                try:
+                    with patch('builtins.print'), patch(
+                        'sentence_transformers.SentenceTransformer'
+                    ):
+                        rag_module = importlib.import_module('rag_engine')
+                    with self.assertRaisesRegex(
+                        RuntimeError, 'FAISS index is unavailable'
+                    ):
+                        rag_module.rag_engine.search('What is SQL?')
+                finally:
+                    sys.modules.pop('rag_engine', None)
+                    if previous_module is not None:
+                        sys.modules['rag_engine'] = previous_module
