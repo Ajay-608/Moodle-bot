@@ -3,9 +3,9 @@
 MoodleBot is a Django learning chatbot with account roles, course-document
 retrieval, FAISS similarity search, and Groq/OpenRouter chat completions.
 
-**Current deployment target:** GitHub `main` → Render Web Service → Gunicorn →
-Django → fresh Render PostgreSQL. Render resources are configured separately
-in the Render Dashboard; this repository does not create or manage them.
+**Production architecture:** GitHub `main` → Render Web Service → Gunicorn →
+Django → Render PostgreSQL. PostgreSQL is the source of truth; FAISS is a
+rebuildable retrieval index derived from its Documents.
 
 ## Local development
 
@@ -26,48 +26,68 @@ administrator privileges remain under administrator control.
 
 ## Render deployment
 
-Use the manual Render Dashboard configuration in
-[QUICK_START.md](./QUICK_START.md) and the complete
-[Render PostgreSQL initialization runbook](./docs/fresh-postgresql-initialization.md).
-The active service uses Django's existing WhiteNoise static-file middleware;
-Render does not need an Nginx configuration.
+Configure the existing Render Web Service to deploy `main` with Auto-Deploy.
+Set its Build and Start Commands to:
 
-Render build command:
+**Build Command**
 
 ```text
-pip install -r requirements.txt && python manage.py collectstatic --noinput
+pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py initialize_production
 ```
 
-Render start command (binds to Render's assigned `PORT`):
+**Start Command**
 
 ```text
-gunicorn --bind 0.0.0.0:$PORT moodlebot.wsgi:application
+gunicorn --bind 0.0.0.0:$PORT --timeout 180 moodlebot.wsgi:application
 ```
 
-Configure production environment variables in Render, not in Git. The
-production database is fresh: no SQLite users, chats, messages, Documents,
-feedback, learning data, surveys, IDs, or FAISS index are migrated or reused.
-Create a new superuser and initialize the knowledge corpus once after the
-service and database are ready. Normal deploys do not seed sample data or run
-legacy loaders.
+Set these required environment variables in Render:
 
-Render's default filesystem is ephemeral. For an index that survives deploys
-and restarts, attach a Render persistent disk at `/var/data` and set
-`FAISS_INDEX_PATH=/var/data/rag_index.faiss`. Persistent disks require a
-compatible paid service plan; check current Render pricing and availability.
-Without a disk, the generated index must be rebuilt after every redeploy,
-restart, or free-service spin-down. Keep this local-index design to one
-service instance. The application reports a clear RAG error instead of
-silently returning fabricated retrieval results when the index is missing.
+- `SECRET_KEY`: a newly generated secret
+- `DEBUG=False`
+- `DATABASE_URL`: the fresh Render PostgreSQL connection URL
+- `ALLOWED_HOSTS`: the actual Render hostname, without the scheme
+- `CSRF_TRUSTED_ORIGINS`: the actual HTTPS origin, including `https://`
+- `PYTHON_VERSION=3.11.9`
+- `GROQ_API_KEY` and/or `OPENROUTER_API_KEY` for hosted LLM responses
 
-## RAG details
+Optional model configuration uses `LLM_MODEL` and `OPENROUTER_MODEL`. Optional
+`CORS_ALLOWED_ORIGINS` is only needed for a separate cross-origin client.
+`FAISS_INDEX_PATH` overrides the generated-index path. Its local default is
+`<project directory>/rag_index.faiss`.
 
-- Embeddings: `all-MiniLM-L6-v2`, 384 dimensions.
-- FAISS IDs are the fresh PostgreSQL `Document.id` values.
-- `python build_index.py` validates the dimensions, count, and ID set, then
-  writes a generated FAISS file atomically at `FAISS_INDEX_PATH`.
-- The generated index is not committed. The legacy SQLite index is not used.
+The optional deployment administrator is configured with all three variables
+`DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, and
+`DJANGO_SUPERUSER_PASSWORD`. Leave all three unset to skip automatic admin
+creation. Passwords are never printed. An existing configured account is
+preserved and is made a staff superuser without resetting its password.
 
-The SQLite fixture tools and document loaders are legacy/optional only. See
-[the SQLite migration note](./docs/sqlite-to-postgresql.md); production does
-not migrate SQLite data.
+`initialize_production` runs during the Build Command. It checks the database,
+optionally creates the deployment administrator, initializes the knowledge
+base only when there are no Documents, and ensures a valid FAISS index exists.
+It is safe to run again. No Render Shell or manual FAISS upload is needed.
+Production begins with a fresh PostgreSQL database: SQLite users, chats,
+messages, Documents, IDs, and old FAISS data are not migrated or reused.
+
+The course text files in `media/*.txt` initialize fresh PostgreSQL Documents.
+`all-MiniLM-L6-v2` creates normalized 384-dimensional vectors associated with
+those current PostgreSQL `Document.id` values. The builder verifies index
+dimensions, counts, IDs, and a content fingerprint, then writes atomically.
+A valid index is reused.
+
+Render Free filesystem contents are not guaranteed to persist across deploys
+or instance restarts. PostgreSQL remains authoritative, and the index can be
+rebuilt from its Documents. If it is missing or stale at runtime, the first
+request requiring RAG rebuilds it under a cross-process file lock; normal
+requests reuse the in-memory index and model within each Gunicorn worker.
+The current Gunicorn command uses its default single worker to limit memory
+use. A runtime rebuild can take time and memory on a Free instance; the chat
+endpoint reports a controlled temporary-unavailability response if a rebuild
+fails rather than treating retrieval as successful.
+
+Django serves collected static files through WhiteNoise. Render supplies
+`$PORT`; no fixed port or Nginx configuration is used.
+
+For detailed environment and deployment notes, see
+[QUICK_START.md](./QUICK_START.md) and
+[the PostgreSQL initialization runbook](./docs/fresh-postgresql-initialization.md).

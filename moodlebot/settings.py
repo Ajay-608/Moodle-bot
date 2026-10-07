@@ -143,7 +143,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 FAISS_INDEX_PATH = Path(
-    os.getenv('FAISS_INDEX_PATH') or BASE_DIR / 'rag_index.faiss'
+    os.getenv('FAISS_INDEX_PATH') or (BASE_DIR / 'rag_index.faiss')
 )
 
 MEDIA_URL = '/media/'

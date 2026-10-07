@@ -7,6 +7,11 @@ from django.contrib.auth.decorators import login_required
 import json
 import logging
 
+from rag_engine import RAGUnavailableError
+
+
+logger = logging.getLogger(__name__)
+
 
 # ============================================================
 # MODEL IMPORTS
@@ -17,17 +22,14 @@ try:
 except ImportError:
     ChatSession = None
     Message = None
-    print("⚠️ Chat models unavailable")
+    logger.warning("Chat models unavailable")
 
 
 try:
     from knowledge.models import Document
 except ImportError:
     Document = None
-    print("⚠️ Knowledge base unavailable")
-
-
-logger = logging.getLogger(__name__)
+    logger.warning("Knowledge base unavailable")
 
 
 # ============================================================
@@ -122,9 +124,7 @@ def send_message(request):
 
         query_lower = query.lower()
 
-        print(
-            f"🔍 User Query: '{query}'"
-        )
+        logger.info("Received chat message")
 
         # ----------------------------------------------------
         # Validate message
@@ -184,9 +184,7 @@ def send_message(request):
                 title=query[:200]
             )
 
-            print(
-                f"🆕 Created ChatSession: {session.id}"
-            )
+            logger.info("Created ChatSession %s", session.id)
 
         # ----------------------------------------------------
         # Load previous messages from CURRENT session only
@@ -219,9 +217,10 @@ def send_message(request):
                 }
             )
 
-        print(
-            f"🧠 Previous messages in session: "
-            f"{len(conversation_history)}"
+        logger.info(
+            "Loaded %s previous messages for chat session %s",
+            len(conversation_history),
+            session.id,
         )
 
         # ----------------------------------------------------
@@ -234,9 +233,7 @@ def send_message(request):
             content=query
         )
 
-        print(
-            f"💾 User message saved to session {session.id}"
-        )
+        logger.info("Saved user message to chat session %s", session.id)
 
         # ====================================================
         # RAG ENGINE
@@ -246,9 +243,7 @@ def send_message(request):
 
         if rag_engine is not None:
 
-            print(
-                "✅ Using RAG Engine"
-            )
+            logger.info("Using RAG engine")
 
             # ------------------------------------------------
             # Retrieve top 5 relevant chunks
@@ -259,10 +254,7 @@ def send_message(request):
                 k=5
             )
 
-            print(
-                f"📚 Retrieved {len(docs)} "
-                f"relevant chunks"
-            )
+            logger.info("Retrieved %s relevant chunks", len(docs))
 
             # ------------------------------------------------
             # Generate grounded response
@@ -285,9 +277,7 @@ def send_message(request):
                 confidence_score=result["confidence"]
             )
 
-            print(
-                f"💾 Bot response saved to session {session.id}"
-            )
+            logger.info("Saved bot response to chat session %s", session.id)
 
             return JsonResponse(
                 {
@@ -304,9 +294,7 @@ def send_message(request):
         # KEYWORD FALLBACK
         # ====================================================
 
-        print(
-            "⚙️ Using keyword fallback"
-        )
+        logger.info("Using keyword fallback")
 
         fallback_responses = {
 
@@ -526,6 +514,16 @@ def send_message(request):
             status=400
         )
 
+    except RAGUnavailableError as e:
+        logger.exception("RAG is unavailable while processing chat message")
+        return JsonResponse(
+            {
+                "success": False,
+                "error": str(e),
+            },
+            status=503,
+        )
+
     except Exception as e:
 
         logger.exception(
@@ -635,6 +633,16 @@ def rag_chat_api(request):
                 "error": "Invalid JSON"
             },
             status=400
+        )
+
+    except RAGUnavailableError as e:
+        logger.exception("RAG is unavailable in the RAG chat API")
+        return JsonResponse(
+            {
+                "success": False,
+                "error": str(e),
+            },
+            status=503,
         )
 
     except Exception as e:

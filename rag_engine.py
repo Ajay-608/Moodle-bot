@@ -1,116 +1,158 @@
-import numpy as np
-import re
+import logging
 import os
+import re
+import threading
+
+import numpy as np
 import requests
-from sentence_transformers import SentenceTransformer
-import faiss
-from django.conf import settings
+
+from core.faiss_index import (
+    EMBEDDING_DIMENSION,
+    create_embedding_model,
+    document_signature,
+    ensure_faiss_index,
+    index_path,
+    metadata_path,
+)
 from knowledge.models import Document
+
+
+logger = logging.getLogger(__name__)
+
+
+class RAGUnavailableError(RuntimeError):
+    """Raised when retrieval cannot safely use a current FAISS index."""
 
 
 class RAGEngine:
     def __init__(self):
-        self.initialization_error = None
         self.model = None
         self.index = None
+        self._document_ids = None
+        self._document_fingerprint = None
+        self._index_file_signature = None
+        self._model_lock = threading.Lock()
+        self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
+        self.groq_api_key = os.environ.get("GROQ_API_KEY")
+        self.groq_model = os.environ.get("LLM_MODEL", "llama-3.1-8b-instant")
+        self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
+        self.openrouter_model = os.environ.get(
+            "OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct:free"
+        )
+
+    def _get_model(self):
+        if self.model is None:
+            with self._model_lock:
+                if self.model is None:
+                    model = create_embedding_model()
+                    if model.get_sentence_embedding_dimension() != EMBEDDING_DIMENSION:
+                        raise RuntimeError(
+                            f"{EMBEDDING_MODEL_NAME} must produce "
+                            f"{EMBEDDING_DIMENSION}-dimensional embeddings."
+                        )
+                    self.model = model
+        return self.model
+
+    @staticmethod
+    def _file_signature():
         try:
-            self.model = SentenceTransformer('all-MiniLM-L6-v2')
-            self.dimension = 384
+            index_stat = index_path().stat()
+            metadata_stat = metadata_path(index_path()).stat()
+        except FileNotFoundError:
+            return None
+        return (
+            index_stat.st_mtime_ns,
+            index_stat.st_size,
+            metadata_stat.st_mtime_ns,
+            metadata_stat.st_size,
+        )
 
-            # --- Groq (primary) ---
-            self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
-            self.groq_api_key = os.environ.get("GROQ_API_KEY")
-            self.groq_model = os.environ.get("LLM_MODEL", "llama-3.1-8b-instant")
+    def _ensure_index(self):
+        try:
+            current_ids, current_fingerprint = document_signature()
+            signature = self._file_signature()
+            if (
+                self.index is not None
+                and current_ids == self._document_ids
+                and current_fingerprint == self._document_fingerprint
+                and signature is not None
+                and signature == self._index_file_signature
+            ):
+                return self.index
 
-            # --- OpenRouter (fallback, used only if Groq fails) ---
-            self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
-            self.openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
-            self.openrouter_model = os.environ.get(
-                "OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct:free"
-            )
+            index = ensure_faiss_index(model_factory=self._get_model)
+            self._document_ids, self._document_fingerprint = document_signature()
+            self._index_file_signature = self._file_signature()
+            self.index = index
+            return index
+        except Exception as exc:
+            logger.exception("Unable to prepare a current FAISS index")
+            raise RAGUnavailableError(
+                "The knowledge index is temporarily unavailable. "
+                "Please try again shortly."
+            ) from exc
 
-            print("🔄 Initializing RAG Engine...")
-            self._safe_setup()
-            print("✅ RAG Engine ready!")
-        except Exception as e:
-            self.initialization_error = e
-            print(f"⚠️ RAG setup failed: {e}")
-
-    def _safe_setup(self):
-        index_path = settings.FAISS_INDEX_PATH
-        if not os.path.isfile(index_path):
-            raise FileNotFoundError(
-                f"FAISS index not found at {index_path}. Build it from the "
-                "active PostgreSQL Documents with 'python build_index.py'."
-            )
-
-        loaded_index = faiss.read_index(str(index_path))
-        if not isinstance(loaded_index, faiss.IndexIDMap2):
-            raise RuntimeError(
-                "The FAISS index does not contain Document primary-key IDs; "
-                "rebuild it with build_index.py."
-            )
-        if loaded_index.d != self.dimension or loaded_index.ntotal == 0:
-            raise RuntimeError(
-                "The FAISS index is empty or has an unexpected embedding "
-                "dimension; rebuild it with build_index.py."
-            )
-        self.index = loaded_index
-        print(f"✅ Loaded FAISS index with Document primary-key IDs from {index_path}")
-
-    def clean_text(self, text):
-        text = re.sub(r'#+\s*', '', text)
-        text = re.sub(r'\*+', '', text)
-        text = re.sub(r'-\s+', '', text)
-        text = re.sub(r'\n+', ' ', text)
+    @staticmethod
+    def clean_text(text):
+        text = re.sub(r"#+\s*", "", text)
+        text = re.sub(r"\*+", "", text)
+        text = re.sub(r"-\s+", "", text)
+        text = re.sub(r"\n+", " ", text)
         return text.strip()
 
     def search(self, query, k=3):
-        if not self.model:
-            raise RuntimeError(
-                "RAG embedding model is unavailable; check the service logs."
-            ) from self.initialization_error
-        if not self.index:
-            try:
-                self._safe_setup()
-            except Exception as error:
-                self.initialization_error = error
-                raise RuntimeError(
-                    "FAISS index is unavailable; build it from PostgreSQL "
-                    "Documents with 'python build_index.py'."
-                ) from error
-            self.initialization_error = None
+        index = self._ensure_index()
         try:
-            query_embedding = self.model.encode(
-                [query],
-                normalize_embeddings=True,
-                convert_to_numpy=True,
+            query_embedding = np.asarray(
+                self._get_model().encode(
+                    [query],
+                    normalize_embeddings=True,
+                    convert_to_numpy=True,
+                ),
+                dtype=np.float32,
             )
-            distances, indices = self.index.search(query_embedding.astype('float32'), k)
-            document_ids = [int(pk) for pk in indices[0] if pk >= 0]
-            documents_by_id = Document.objects.in_bulk(document_ids)
-            docs = [documents_by_id[pk] for pk in document_ids if pk in documents_by_id]
-            print(f"📄 Context docs found: {len(docs)}")
-            return docs, distances[0].tolist()
-        except Exception as e:
-            print(f"Search error: {e}")
-            return [], [1.0] * k
+            if query_embedding.shape != (1, EMBEDDING_DIMENSION):
+                raise RuntimeError(
+                    "Query embedding has an unexpected dimension; "
+                    "the configured embedding model may have changed."
+                )
+            if not np.isfinite(query_embedding).all():
+                raise RuntimeError("Query embedding contains non-finite values.")
 
-    def _call_openai_style(self, url, api_key, model, prompt, timeout=30, max_tokens=150):
-        """Shared caller for Groq and OpenRouter — both use the OpenAI chat format."""
+            distances, indices = index.search(query_embedding, max(1, k))
+            requested_ids = [int(pk) for pk in indices[0] if pk >= 0]
+            documents_by_id = Document.objects.in_bulk(requested_ids)
+            docs = [documents_by_id[pk] for pk in requested_ids if pk in documents_by_id]
+            if len(docs) != len(requested_ids):
+                self.index = None
+                raise RuntimeError(
+                    "FAISS returned Document IDs that no longer exist in the database."
+                )
+            return docs, distances[0].tolist()
+        except Exception as exc:
+            logger.exception("FAISS retrieval failed")
+            if isinstance(exc, RAGUnavailableError):
+                raise
+            raise RAGUnavailableError(
+                "The knowledge index is temporarily unavailable. "
+                "Please try again shortly."
+            ) from exc
+
+    def _call_openai_style(self, url, api_key, model, prompt, timeout=30, max_tokens=500):
         response = requests.post(
             url,
             headers={
                 "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
             json={
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
-                "temperature": 0.1
+                "temperature": 0.1,
             },
-            timeout=timeout
+            timeout=timeout,
         )
         response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"]
@@ -119,14 +161,17 @@ class RAGEngine:
         return content.strip()
 
     def generate_response(self, query, context_docs, conversation_history=None):
-        print(f"📄 Context docs received: {len(context_docs)}")
+        logger.info("RAG received %s context documents", len(context_docs))
 
         if not context_docs:
-            print("⚠️ No docs found — returning fallback")
+            logger.warning("No relevant documents were returned by FAISS")
             return {
-                "answer": "Database Systems course covers SQL, JOINs, and normalization. Try asking: 'Explain SQL JOINs' or 'What is 3NF?'",
+                "answer": (
+                    "Database Systems course covers SQL, JOINs, and normalization. "
+                    "Try asking: 'Explain SQL JOINs' or 'What is 3NF?'"
+                ),
                 "confidence": 0.85,
-                "sources": ["CS401 Course"]
+                "sources": ["CS401 Course"],
             }
 
         context = "\n\n---\n\n".join([
@@ -138,7 +183,6 @@ class RAGEngine:
             for message in (conversation_history or [])[-10:]
             if message.get("role") in {"user", "assistant"}
         )
-
         prompt = f"""You are MoodleBot, a friendly database systems tutor.
 
 Using the context below, answer the student's question clearly and helpfully.
@@ -155,46 +199,40 @@ CONVERSATION HISTORY:
 
 QUESTION: {query}
 
-Answer using markdown formatting (code blocks, tables) where it aids clarity."""
+Answer using markdown formatting (code blocks, tables) where it aids clarity.
+"""
 
         answer = None
-
-        # --- Try Groq first ---
         try:
             if not self.groq_api_key:
                 raise RuntimeError("GROQ_API_KEY not set")
             answer = self._call_openai_style(
-                self.groq_url, self.groq_api_key, self.groq_model, prompt, max_tokens=500
+                self.groq_url, self.groq_api_key, self.groq_model, prompt
             )
-            print(f"✅ Groq answered: {answer[:150]}")
-        except Exception as e:
-            print(f"⚠️ Groq failed ({e}) — trying OpenRouter fallback...")
-
-            # --- Fallback to OpenRouter ---
+            logger.info("Groq generated a response")
+        except Exception:
+            logger.exception("Groq provider request failed; trying OpenRouter")
             try:
                 if not self.openrouter_api_key:
                     raise RuntimeError("OPENROUTER_API_KEY not set")
                 answer = self._call_openai_style(
-                    self.openrouter_url, self.openrouter_api_key,
-                    self.openrouter_model, prompt, max_tokens=500
+                    self.openrouter_url,
+                    self.openrouter_api_key,
+                    self.openrouter_model,
+                    prompt,
                 )
-                print(f"✅ OpenRouter answered: {answer[:150]}")
-            except Exception as e2:
-                print(f"❌ OpenRouter also failed: {e2}")
+                logger.info("OpenRouter generated a response")
+            except Exception:
+                logger.exception("OpenRouter provider request failed")
 
-        if answer:
-            answer = answer.strip()
-        else:
-            # --- Both providers failed: plain-text fallback ---
-            titles = [doc.title for doc in context_docs]
-            answer = f"Based on {', '.join(titles)}: {query}"
+        if not answer:
+            answer = f"Based on {', '.join(doc.title for doc in context_docs)}: {query}"
 
         return {
-            "answer": answer,
+            "answer": answer.strip(),
             "confidence": 0.88,
-            "sources": [doc.title for doc in context_docs]
+            "sources": [doc.title for doc in context_docs],
         }
 
 
-# Global instance
 rag_engine = RAGEngine()

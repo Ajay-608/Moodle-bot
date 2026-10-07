@@ -10,6 +10,9 @@ env/
 __pycache__/
 *.pyc
 *.faiss
+*.faiss.lock
+*.faiss.metadata.json
+*.faiss.*.tmp
 staticfiles/
 test_gemini.py
 list_models.py

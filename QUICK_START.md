@@ -1,14 +1,12 @@
 # MoodleBot — Quick Start
 
-**Current production target:** GitHub → Render Web Service → Gunicorn → Django
-→ fresh Render PostgreSQL. This repository's Render conversion is preparation
-only; do not consider a deployment complete until you create and configure the
-services in the Render Dashboard.
+**Production:** GitHub `main` → Render Web Service → Gunicorn → Django →
+fresh Render PostgreSQL.
 
 ## Local development
 
-Use Python 3.11. Copy `.env.example` to `.env`, set a local `SECRET_KEY`, set
-`DEBUG=True`, and leave `DATABASE_URL` blank to use local SQLite.
+Use Python 3.11. Copy `.env.example` to `.env`, set a local `SECRET_KEY`,
+set `DEBUG=True`, and leave `DATABASE_URL` blank to use local SQLite.
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -17,79 +15,57 @@ python manage.py populate_sample_data
 python manage.py runserver
 ```
 
-Sample data is local-only. Never run `populate_sample_data` in production.
+`populate_sample_data` is for local development only and refuses to run when
+`DEBUG=False`.
 
 ## Render configuration
 
-1. Configure the existing Render Web Service to deploy the `main` branch of
-   `Ajay-608/Moodle-bot`. With Auto-Deploy enabled, pushing reviewed commits to
-   `main` triggers a deployment.
-2. Configure the Web Service's `DATABASE_URL` with the URL for the fresh
-   Render PostgreSQL database. Use its internal connection URL when both
-   services are in the same Render region; keep the URL private.
-3. Choose Python 3 and configure `PYTHON_VERSION=3.11.9`.
-4. Configure these commands:
+Configure the existing Render Web Service to deploy `main` with Auto-Deploy.
+Set `PYTHON_VERSION=3.11.9` and these commands:
 
-   **Build Command**
-
-   ```text
-   pip install -r requirements.txt && python manage.py collectstatic --noinput
-   ```
-
-   **Start Command**
-
-   ```text
-   gunicorn --bind 0.0.0.0:$PORT moodlebot.wsgi:application
-   ```
-
-   Render supplies `PORT`; do not replace it with a hard-coded port.
-5. Set the environment variables listed in
-   [the deployment runbook](./docs/fresh-postgresql-initialization.md).
-   Set `DEBUG=False`. After Render assigns the service hostname, use the actual
-   hostname (without scheme) in `ALLOWED_HOSTS`, and its `https://` origin in
-   `CSRF_TRUSTED_ORIGINS`.
-6. Render's default TCP health check is sufficient. There is no dedicated
-   application health endpoint in the current project; do not configure a
-   nonexistent `/api/health` route.
-7. For reliable FAISS availability, attach a persistent disk mounted at
-   `/var/data` and set `FAISS_INDEX_PATH=/var/data/rag_index.faiss`. This
-   requires a compatible paid service plan. Without a disk, the index is lost
-   on restart, deploy, or free-instance spin-down and must be rebuilt before
-   chat retrieval is available. Keep this design to a single service
-   instance; the disk is not shared across multiple instances.
-
-## One-time fresh database setup
-
-After the Web Service has successfully deployed, use the service's Dashboard
-Shell connected to the live instance (not an isolated ephemeral shell) and
-run these commands **once, in order**:
+**Build Command**
 
 ```text
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py initialize_knowledge_base
-python build_index.py
-python manage.py check
+pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py initialize_production
 ```
 
-The initializer loads committed `media/*.txt` sources into deterministic,
-normalized 500-character chunks. It runs atomically and refuses to run if any
-Documents already exist. `build_index.py` reads the current PostgreSQL
-Documents, generates normalized 384-dimensional `all-MiniLM-L6-v2`
-embeddings, maps each vector to its PostgreSQL `Document.id`, validates exact
-IDs and counts, and atomically writes the index.
+**Start Command**
 
-The database is fresh. Old SQLite users/passwords, chats/messages, Documents,
-feedback, learning gaps, surveys, and IDs are not migrated. The old FAISS
-index is not reused. Create a new production superuser; users register
-normally after launch. Public registration creates students only.
+```text
+gunicorn --bind 0.0.0.0:$PORT --timeout 180 moodlebot.wsgi:application
+```
 
-Routine deploys run the Build and Start Commands above. They do **not** run
-`migrate`, `createsuperuser`, `initialize_knowledge_base`,
-`populate_sample_data`, SQLite fixture tools, or destructive legacy loaders
-automatically. Run migrations as a controlled operation when schema changes
-are introduced.
+Set `SECRET_KEY`, `DEBUG=False`, `DATABASE_URL`, `ALLOWED_HOSTS`, and
+`CSRF_TRUSTED_ORIGINS` in the Render environment. Use the actual hostname
+without a scheme for `ALLOWED_HOSTS`, and its HTTPS origin for
+`CSRF_TRUSTED_ORIGINS`. Configure `GROQ_API_KEY` and/or
+`OPENROUTER_API_KEY` for hosted model responses. `LLM_MODEL`,
+`OPENROUTER_MODEL`, `CORS_ALLOWED_ORIGINS`, and `FAISS_INDEX_PATH` are
+optional when their defaults fit your setup.
 
-Check Render's current pricing and plan limitations before creating services
-or a persistent disk; this guide does not promise that any Render service is
-free.
+The optional deployment administrator requires all three:
+`DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, and
+`DJANGO_SUPERUSER_PASSWORD`. Leave all three unset to skip automatic
+creation. Existing configured accounts are preserved and promoted to staff
+superusers without resetting their passwords.
+
+The Build Command applies schema migrations, collects static files, and runs
+`initialize_production`. That command initializes Documents from committed
+`media/*.txt` files only when the database has none, then creates or reuses a
+valid FAISS index from the current PostgreSQL Document IDs. It does not import
+SQLite data or reset IDs. No Render Shell, manual index generation, or file
+upload is required.
+
+Render Free filesystems can be replaced across deploys or restarts. FAISS is
+derived data, not persistent application state; if the index is missing or
+stale at runtime, a request requiring retrieval rebuilds it from PostgreSQL
+under a cross-process file lock. Gunicorn's default single worker limits
+memory use. If rebuilding fails, the chat endpoint returns a controlled
+temporary error.
+
+Django serves static files using WhiteNoise. Render provides `$PORT`; do not
+hard-code a production port or configure Nginx. Render's default TCP health
+check applies; the project has no dedicated application health endpoint.
+
+For the full environment and operational details, see
+[the Render PostgreSQL initialization runbook](./docs/fresh-postgresql-initialization.md).

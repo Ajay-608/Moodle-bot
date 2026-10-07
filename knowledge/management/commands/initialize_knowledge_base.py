@@ -58,6 +58,6 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Created {len(documents)} Document chunks from {source_dir}. "
-                "Run build_index.py after verifying the content."
+                "initialize_production will ensure the FAISS index."
             )
         )
