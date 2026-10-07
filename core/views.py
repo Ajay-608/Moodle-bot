@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, get_user_model
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import login_required
@@ -10,45 +9,35 @@ from datetime import timedelta
 
 from knowledge.models import Document
 from chat.models import ChatSession, Message
+from .forms import RegisterForm
 from .models import UserProfile, ResponseFeedback, LearningGap, TAMSurvey
 
 User = get_user_model()
 
+
+def get_or_create_user_profile(user):
+    user_type = 'admin' if user.is_superuser else 'student'
+    return UserProfile.objects.get_or_create(
+        user=user,
+        defaults={'user_type': user_type},
+    )[0]
+
+
 # 🔓 PUBLIC VIEWS (No login required)
 @csrf_protect
 def register(request):
-    """User registration with role selection"""
-    from django import forms
-    
-    class RoleUserCreationForm(UserCreationForm):
-        user_type = forms.ChoiceField(
-            choices=[
-                ('student', '📚 Student - Learn & Access Chat'),
-                ('teacher', '👨‍🏫 Teacher - Create Courses & Manage'),
-                ('admin', '🔧 Admin - Full System Access'),
-            ],
-            widget=forms.RadioSelect,
-            required=True
-        )
-        
-        class Meta:
-            model = User
-            fields = ('username', 'password1', 'password2', 'user_type')
-    
+    """Public registration creates student accounts only."""
     if request.method == 'POST':
-        form = RoleUserCreationForm(request.POST)
+        form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            user_type = form.cleaned_data.get('user_type', 'student')
-            # Create UserProfile with selected role
-            UserProfile.objects.get_or_create(user=user, defaults={'user_type': user_type})
-            username = form.cleaned_data.get('username')
-            messages.success(request, f'🎉 Account created as {user_type.upper()}! Please login.')
+            get_or_create_user_profile(user)
+            messages.success(request, '🎉 Student account created! Please login.')
             return redirect('core:login')
         else:
             messages.error(request, '❌ Registration failed. Fix errors below.')
     else:
-        form = RoleUserCreationForm()
+        form = RegisterForm()
     return render(request, 'core/register.html', {'form': form})
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -66,7 +55,7 @@ def student_login(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            profile = UserProfile.objects.get_or_create(user=user)[0]
+            profile = get_or_create_user_profile(user)
             if profile.user_type != 'student':
                 messages.error(request, '❌ This account is not a student account. Use the correct login.')
                 return redirect('core:student_login')
@@ -88,7 +77,7 @@ def teacher_login(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            profile = UserProfile.objects.get_or_create(user=user)[0]
+            profile = get_or_create_user_profile(user)
             if profile.user_type != 'teacher':
                 messages.error(request, '❌ This account is not a teacher account. Use the correct login.')
                 return redirect('core:teacher_login')
@@ -110,7 +99,7 @@ def admin_login(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            profile = UserProfile.objects.get_or_create(user=user)[0]
+            profile = get_or_create_user_profile(user)
             if profile.user_type != 'admin':
                 messages.error(request, '❌ This account is not an admin account. Use the correct login.')
                 return redirect('core:admin_login')
@@ -125,7 +114,7 @@ def admin_login(request):
 @login_required
 def dashboard(request):
     """Route to appropriate dashboard based on user role"""
-    profile = UserProfile.objects.get_or_create(user=request.user)[0]
+    profile = get_or_create_user_profile(request.user)
     
     if profile.user_type == 'admin':
         return admin_dashboard(request)
@@ -174,7 +163,7 @@ def student_dashboard(request):
 def teacher_dashboard(request):
     """Teacher-specific dashboard: Class analytics, struggling students, content gaps"""
     # Ensure user is teacher/admin
-    profile = UserProfile.objects.get_or_create(user=request.user)[0]
+    profile = get_or_create_user_profile(request.user)
     if profile.user_type not in ['teacher', 'admin']:
         return redirect('core:student_dashboard')
     
@@ -230,7 +219,7 @@ def teacher_dashboard(request):
 def admin_dashboard(request):
     """Admin-specific dashboard: System config, user management, performance"""
     # Ensure user is admin
-    profile = UserProfile.objects.get_or_create(user=request.user)[0]
+    profile = get_or_create_user_profile(request.user)
     if profile.user_type != 'admin':
         return redirect('core:teacher_dashboard')
     
@@ -311,7 +300,7 @@ def course_list(request):
 @login_required
 def profile(request):
     """User profile page"""
-    profile = UserProfile.objects.get_or_create(user=request.user)[0]
+    profile = get_or_create_user_profile(request.user)
     context = {
         'user': request.user,
         'user_profile': profile,

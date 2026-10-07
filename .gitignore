@@ -1,18 +1,36 @@
 .env
+.env.*
+!.env.example
 db.sqlite3
+*.sqlite3
 venv/
 __pycache__/
 *.pyc
+*.faiss
+staticfiles/
 test_gemini.py
 list_models.py
  
-# ignore specific txt files, but keep requirements.txt and runtime.txt
-# NOTE: media/ is intentionally NOT ignored — it holds the course
-# material .txt files (DBMS.txt, Information Systems.txt) that
-# index_text_files.py needs to build the knowledge base. Without
-# these committed, Render's build has nothing to index.
+# Ignore general text outputs but keep the committed course source files
+# required by initialize_knowledge_base.
 PROJECT_SUMMARY.txt
 *.txt
 !requirements.txt
 !runtime.txt
 !media/*.txt
+backups/
+*.fixture.json
+*.migration-backup.sqlite3
+*.tmp
+*.log
+*.dump
+*.dump.*
+*.sql.gz
+*.backup
+*.bak
+*.export.*
+.aws/
+*.pem
+*.p12
+*.pfx
+*.key

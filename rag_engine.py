@@ -36,15 +36,18 @@ class RAGEngine:
             self.index = None
 
     def _safe_setup(self):
-        index_path = 'rag_index.faiss'
+        index_path = os.path.join(settings.BASE_DIR, 'rag_index.faiss')
         if os.path.exists(index_path):
-            try:
-                self.index = faiss.read_index(index_path)
-                print("✅ Loaded FAISS index")
-                return
-            except:
-                pass
-        self.index = faiss.IndexFlatL2(self.dimension)
+            loaded_index = faiss.read_index(index_path)
+            if not isinstance(loaded_index, faiss.IndexIDMap2):
+                raise RuntimeError(
+                    "The FAISS index does not contain Document primary-key IDs; "
+                    "rebuild it with build_index.py."
+                )
+            self.index = loaded_index
+            print("✅ Loaded FAISS index with Document primary-key IDs")
+            return
+        self.index = faiss.IndexIDMap2(faiss.IndexFlatL2(self.dimension))
         print("✅ Created empty FAISS index")
 
     def clean_text(self, text):
@@ -58,16 +61,15 @@ class RAGEngine:
         if not self.model or not self.index:
             return [], [1.0] * k
         try:
-            query_embedding = self.model.encode([query])
+            query_embedding = self.model.encode(
+                [query],
+                normalize_embeddings=True,
+                convert_to_numpy=True,
+            )
             distances, indices = self.index.search(query_embedding.astype('float32'), k)
-            all_docs = list(Document.objects.all().order_by('id'))
-            docs = []
-            for idx in indices[0]:
-                try:
-                    if 0 <= idx < len(all_docs):
-                        docs.append(all_docs[idx])
-                except:
-                    continue
+            document_ids = [int(pk) for pk in indices[0] if pk >= 0]
+            documents_by_id = Document.objects.in_bulk(document_ids)
+            docs = [documents_by_id[pk] for pk in document_ids if pk in documents_by_id]
             print(f"📄 Context docs found: {len(docs)}")
             return docs, distances[0].tolist()
         except Exception as e:

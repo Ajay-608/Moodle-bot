@@ -1,12 +1,10 @@
-"""
-Populate database with SQL/Database Q&A dataset
-Simple version that works around import issues
-"""
+"""LEGACY/OPTIONAL SQLite-only loader for database_dataset.json."""
 import os
 import sys
 import django
 import json
 import traceback
+import argparse
 
 # Add project to path
 sys.path.insert(0, os.path.dirname(__file__))
@@ -23,10 +21,24 @@ except Exception as e:
     sys.exit(1)
 
 from knowledge.models import Document
+from django.db import connection
 from django.utils import timezone
 
 def load_database_dataset():
     """Load SQL/Database Q&A from JSON into Document model"""
+    if connection.vendor != 'sqlite':
+        raise RuntimeError(
+            'Refusing to load this dataset into a non-SQLite database; '
+            'the loader replaces and updates Document rows.'
+        )
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--replace-existing',
+        action='store_true',
+        help='Allow replacing existing course 1 Documents in local SQLite.',
+    )
+    options = parser.parse_args()
     
     json_path = 'database_dataset.json'
     
@@ -47,6 +59,11 @@ def load_database_dataset():
         
         # Clear old documents to avoid duplicates
         existing = Document.objects.filter(course_id=1)
+        if existing.exists() and not options.replace_existing:
+            raise RuntimeError(
+                'Existing course 1 Documents were found. Use --replace-existing '
+                'only for an intentional local SQLite replacement.'
+            )
         print(f"🗑️  Clearing {existing.count()} existing documents...")
         existing.delete()
         
@@ -125,4 +142,3 @@ if __name__ == "__main__":
     else:
         print("\n❌ Failed to load dataset")
         sys.exit(1)
-

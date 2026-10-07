@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
+from django.db import connection
 from django.utils import timezone
 from knowledge.models import Document
 import json
@@ -6,7 +7,7 @@ import os
 
 
 class Command(BaseCommand):
-    help = 'Load database SQL/Database Q&A dataset into knowledge base'
+    help = 'LEGACY SQLite-only loader for the alternate database_dataset.json corpus'
     
     def add_arguments(self, parser):
         parser.add_argument(
@@ -27,6 +28,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         course_id = options['course_id']
         should_clear = options['clear']
+        if connection.vendor != 'sqlite':
+            raise CommandError(
+                'This dataset loader is SQLite-only because it can overwrite '
+                'Document content; do not run it on PostgreSQL.'
+            )
         
         # Load JSON dataset
         dataset_path = os.path.join(

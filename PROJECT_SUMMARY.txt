@@ -1,59 +1,39 @@
-# MoodleBot — Deployment Change Summary
+MOODLEBOT — CURRENT DEPLOYMENT READINESS
+========================================
 
-## Live URL
-https://moodle-bot-1zx9.onrender.com
+Production target (planned, not deployed):
 
-## What changed, and why
+Internet
+  -> Nginx
+  -> Gunicorn
+  -> Django
+  -> Amazon RDS PostgreSQL
 
-### 1. `rag_engine.py`
-- **Removed:** Ollama (local-only LLM, incompatible with cloud hosting)
-- **Added:** Groq as primary LLM provider, OpenRouter as automatic fallback
-- **Added:** Guard against `None`/empty API responses (fixed a crash: `'NoneType' object has no attribute 'strip'`)
-- Reads `GROQ_API_KEY`, `LLM_MODEL`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` from environment variables
+Production initialization uses a fresh PostgreSQL database. The old SQLite
+database is local/archive data only and is not migrated. Existing SQLite
+users/profiles, chats/messages, Documents, feedback, learning gaps, surveys,
+and primary keys will not appear in PostgreSQL. A new superuser is created
+directly in PostgreSQL; users register normally after launch.
 
-### 2. `requirements.txt`
-- Trimmed from the original (which included unrelated packages like `tensorflow`, `torch` GPU build, `celery`, `redis`, `mysqlclient`, `opencv`, `google-generativeai` — none used by this project)
-- Added `--extra-index-url https://download.pytorch.org/whl/cpu` + pinned `torch==2.2.2` to force the CPU-only build (avoids pulling multi-GB CUDA packages on Render's GPU-less servers)
-- Added `gunicorn`, `whitenoise` (needed for production, weren't in original list)
+The committed media/*.txt files are the production knowledge source.
+`python manage.py initialize_knowledge_base` creates new Documents and chunks
+on a fresh database and refuses to run if any Documents already exist.
+PostgreSQL assigns fresh Document IDs. Run `python build_index.py` afterward
+to create a new FAISS index using all-MiniLM-L6-v2 (384 dimensions) and mapping
+PostgreSQL Document.id values to FAISS IDs. The old `rag_index.faiss` is not
+used.
 
-### 3. `moodlebot/settings.py`
-- `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` now read from environment variables instead of being hardcoded
-- Added `whitenoise` middleware + `STATICFILES_STORAGE` (serves CSS/JS correctly with `DEBUG=False`)
-- Added `CSRF_TRUSTED_ORIGINS` and `SECURE_PROXY_SSL_HEADER` (fixed CSRF errors caused by Render's HTTPS proxy setup)
-- Added `core.rate_limit_middleware.ChatRateLimitMiddleware` to `MIDDLEWARE`
-- Removed unused `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `OPENAI_API_KEY` settings (not used anywhere in the code)
+Fresh PostgreSQL initialization steps and required environment variables:
+`docs/fresh-postgresql-initialization.md`
 
-### 4. `core/rate_limit_middleware.py` (new file)
-- Caps each visitor to 20 chat messages/hour to protect the shared Groq/OpenRouter free-tier quota from being exhausted by heavy testing or traffic bursts
+`populate_sample_data` is local-development-only. Destructive legacy content
+loaders are not part of production initialization or normal deployments.
+Optional SQLite migration/export scripts are retained as legacy local tools
+only; production does not depend on them.
 
-### 5. `.gitignore`
-- Fixed `*.txt` rule that was accidentally also blocking `requirements.txt` and `runtime.txt` from being committed
-- Removed blanket `media/` ignore — this folder holds the actual course content (`.txt` files) the RAG knowledge base is built from, so it needs to be tracked, not ignored
+AWS RDS, EC2, DNS, HTTPS, Nginx/Gunicorn deployment, and PostgreSQL
+connectivity have not been created, configured, or tested. No AWS resource
+identifiers, addresses, endpoints, or credentials are specified here.
 
-### 6. `runtime.txt` (created, later superseded)
-- Originally added to pin Python 3.11 for Render
-- **Note:** Render no longer reads `runtime.txt` — the actual fix was setting the `PYTHON_VERSION=3.11.9` environment variable in Render's dashboard instead. The file is harmless to keep but isn't what's actually controlling the Python version now.
-
-### 7. `Procfile` (created)
-- Declares: `web: gunicorn moodlebot.wsgi:application --bind 0.0.0.0:$PORT`
-- Currently not the active start command (Render's dashboard Start Command overrides it — see below) — kept for documentation purposes
-
-### 8. `chat/views.py`
-- Cosmetic only: renamed misleading `"✅ Using Gemini RAG"` log message and `'source_type': 'gemini_rag'` label to accurately reflect the actual engine (Groq/OpenRouter via `rag_engine.py`, not Gemini — Gemini was never actually used)
-
-## Render dashboard configuration (not in the repo)
-
-| Setting | Value |
-|---|---|
-| Build Command | `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py populate_sample_data && python index_text_files.py && python build_index.py` |
-| Start Command | `gunicorn moodlebot.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 1` |
-| Environment Variables | `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS=moodle-bot-1zx9.onrender.com,localhost,127.0.0.1`, `GROQ_API_KEY`, `LLM_MODEL=openai/gpt-oss-20b`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL=openrouter/free`, `PYTHON_VERSION=3.11.9` |
-
-## External services added
-
-- **UptimeRobot** — pings the app every 5 minutes to prevent Render's free-tier cold-start sleep
-
-## Known non-issues (don't "fix" these)
-
-- `google-api-core`/`tensorflow-intel` dependency warnings during local pip installs — harmless, from unrelated packages in your global Python environment, not used by this project
-- Default demo credentials (`admin/admin123` etc.) are still in the public README — low risk for a portfolio project, but worth changing if you want to lock it down further
+Historical Render deployment notes were intentionally removed from this
+current-readiness summary. The old deployment is not the production target.
