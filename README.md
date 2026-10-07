@@ -1,58 +1,73 @@
-# MoodleBot - AI-Powered Educational Chatbot
+# MoodleBot
 
-**Status:** ✅ Deployed | **Django Version:** 4.2.7 | **Database:** SQLite | **Python:** 3.11 | **AI:** Groq + OpenRouter | **RAG:** FAISS + Sentence Transformers
+MoodleBot is a Django learning chatbot with account roles, course-document
+retrieval, FAISS similarity search, and Groq/OpenRouter chat completions.
 
----
+**Current deployment target:** GitHub `main` → Render Web Service → Gunicorn →
+Django → fresh Render PostgreSQL. Render resources are configured separately
+in the Render Dashboard; this repository does not create or manage them.
 
-## 🤖 What is MoodleBot?
+## Local development
 
-MoodleBot is an AI-powered educational chatbot designed for students, teachers, and administrators. It is built using the Django web framework and uses **Retrieval-Augmented Generation (RAG)** to answer questions using course-specific educational content.
+Use Python 3.11. Copy `.env.example` to `.env`, provide a local-only
+`SECRET_KEY`, set `DEBUG=True`, and leave `DATABASE_URL` blank to use the
+ignored local SQLite database.
 
-The system retrieves relevant course material before generating an answer, helping keep responses grounded in the available knowledge base.
+```powershell
+python -m pip install -r requirements.txt
+python manage.py migrate
+python manage.py populate_sample_data
+python manage.py runserver
+```
 
-### How it works
+`populate_sample_data` is local-development-only and refuses to run with
+`DEBUG=False`. Public registration creates student accounts only; teacher and
+administrator privileges remain under administrator control.
 
-1. Student asks a question in the chat
-2. Sentence Transformer converts the question into a 384-dimensional embedding
-3. FAISS searches the indexed course-document chunks
-4. Relevant chunks are retrieved using vector similarity
-5. MoodleBot checks whether relevant course information is available
-6. The system uses the current chat session context when appropriate
-7. Groq generates the final response
-8. OpenRouter is used as a fallback if Groq is unavailable
-9. The student receives a conversational answer with a retrieval confidence score
+## Render deployment
 
----
+Use the manual Render Dashboard configuration in
+[QUICK_START.md](./QUICK_START.md) and the complete
+[Render PostgreSQL initialization runbook](./docs/fresh-postgresql-initialization.md).
+The active service uses Django's existing WhiteNoise static-file middleware;
+Render does not need an Nginx configuration.
 
-## 🌐 Live Demo
+Render build command:
 
-**Deployed Application:**
+```text
+pip install -r requirements.txt && python manage.py collectstatic --noinput
+```
 
-https://moodle-bot-1zx9.onrender.com
+Render start command (binds to Render's assigned `PORT`):
 
-> Note: The application may take some time to start when using Render's free hosting tier.
+```text
+gunicorn --bind 0.0.0.0:$PORT moodlebot.wsgi:application
+```
 
----
+Configure production environment variables in Render, not in Git. The
+production database is fresh: no SQLite users, chats, messages, Documents,
+feedback, learning data, surveys, IDs, or FAISS index are migrated or reused.
+Create a new superuser and initialize the knowledge corpus once after the
+service and database are ready. Normal deploys do not seed sample data or run
+legacy loaders.
 
-## 🚀 Quick Start
+Render's default filesystem is ephemeral. For an index that survives deploys
+and restarts, attach a Render persistent disk at `/var/data` and set
+`FAISS_INDEX_PATH=/var/data/rag_index.faiss`. Persistent disks require a
+compatible paid service plan; check current Render pricing and availability.
+Without a disk, the generated index must be rebuilt after every redeploy,
+restart, or free-service spin-down. Keep this local-index design to one
+service instance. The application reports a clear RAG error instead of
+silently returning fabricated retrieval results when the index is missing.
 
-### Prerequisites
+## RAG details
 
-```bash
-# Python 3.11 recommended
+- Embeddings: `all-MiniLM-L6-v2`, 384 dimensions.
+- FAISS IDs are the fresh PostgreSQL `Document.id` values.
+- `python build_index.py` validates the dimensions, count, and ID set, then
+  writes a generated FAISS file atomically at `FAISS_INDEX_PATH`.
+- The generated index is not committed. The legacy SQLite index is not used.
 
-# Clone the repository
-git clone https://github.com/Ajay-608/Moodle-bot.git
-
-cd Moodle-bot
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# Windows
-venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-**Version:** 2.0 - Ollama RAG
+The SQLite fixture tools and document loaders are legacy/optional only. See
+[the SQLite migration note](./docs/sqlite-to-postgresql.md); production does
+not migrate SQLite data.

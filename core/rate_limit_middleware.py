@@ -4,10 +4,8 @@ Simple in-memory rate limiter for the chat endpoint.
 Protects your Groq/OpenRouter API quota from being exhausted by a single
 user or bot spamming requests. Limits are per IP address, reset hourly.
 
-NOTE: This uses in-memory storage, so limits reset if the app restarts
-(which happens often on Render's free tier). That's fine for a demo —
-if you need robust limiting across restarts, use Django's cache framework
-with Redis instead.
+NOTE: This uses in-memory storage, so limits reset if the app restarts. This is
+appropriate only for a single-process demo deployment.
 
 Usage: add 'core.rate_limit_middleware.ChatRateLimitMiddleware' to your
 MIDDLEWARE list in settings.py, placed after AuthenticationMiddleware.

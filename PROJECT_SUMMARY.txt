@@ -1,59 +1,56 @@
-# MoodleBot — Deployment Change Summary
+MOODLEBOT — RENDER DEPLOYMENT PREPARATION
+=========================================
 
-## Live URL
-https://moodle-bot-1zx9.onrender.com
+Current target (planned, not deployed):
 
-## What changed, and why
+GitHub
+  -> Render Web Service
+  -> Gunicorn
+  -> Django
+  -> fresh Render PostgreSQL
 
-### 1. `rag_engine.py`
-- **Removed:** Ollama (local-only LLM, incompatible with cloud hosting)
-- **Added:** Groq as primary LLM provider, OpenRouter as automatic fallback
-- **Added:** Guard against `None`/empty API responses (fixed a crash: `'NoneType' object has no attribute 'strip'`)
-- Reads `GROQ_API_KEY`, `LLM_MODEL`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` from environment variables
+Render build command:
+pip install -r requirements.txt && python manage.py collectstatic --noinput
 
-### 2. `requirements.txt`
-- Trimmed from the original (which included unrelated packages like `tensorflow`, `torch` GPU build, `celery`, `redis`, `mysqlclient`, `opencv`, `google-generativeai` — none used by this project)
-- Added `--extra-index-url https://download.pytorch.org/whl/cpu` + pinned `torch==2.2.2` to force the CPU-only build (avoids pulling multi-GB CUDA packages on Render's GPU-less servers)
-- Added `gunicorn`, `whitenoise` (needed for production, weren't in original list)
+Render start command:
+gunicorn --bind 0.0.0.0:$PORT moodlebot.wsgi:application
 
-### 3. `moodlebot/settings.py`
-- `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` now read from environment variables instead of being hardcoded
-- Added `whitenoise` middleware + `STATICFILES_STORAGE` (serves CSS/JS correctly with `DEBUG=False`)
-- Added `CSRF_TRUSTED_ORIGINS` and `SECURE_PROXY_SSL_HEADER` (fixed CSRF errors caused by Render's HTTPS proxy setup)
-- Added `core.rate_limit_middleware.ChatRateLimitMiddleware` to `MIDDLEWARE`
-- Removed unused `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `OPENAI_API_KEY` settings (not used anywhere in the code)
+The Web Service uses Render's assigned PORT. Django serves collected static
+files through WhiteNoise; Nginx is not part of this Render setup. Production
+settings require SECRET_KEY and DATABASE_URL when DEBUG=False. Set DEBUG=False
+and all secrets in the Render environment, not in Git.
 
-### 4. `core/rate_limit_middleware.py` (new file)
-- Caps each visitor to 20 chat messages/hour to protect the shared Groq/OpenRouter free-tier quota from being exhausted by heavy testing or traffic bursts
+The production PostgreSQL database is fresh. SQLite data is not migrated:
+old users/password hashes, chats/messages, Documents, feedback, learning gaps,
+surveys, primary keys, and the old FAISS index are not carried over. Create a
+new superuser. Initialize the knowledge corpus once with
+`python manage.py initialize_knowledge_base`; it uses committed media/*.txt,
+creates normalized 500-character chunks with fresh PostgreSQL IDs, and
+refuses to run if Documents already exist.
 
-### 5. `.gitignore`
-- Fixed `*.txt` rule that was accidentally also blocking `requirements.txt` and `runtime.txt` from being committed
-- Removed blanket `media/` ignore — this folder holds the actual course content (`.txt` files) the RAG knowledge base is built from, so it needs to be tracked, not ignored
+Run `python build_index.py` after initialization. It indexes the current
+PostgreSQL Documents using all-MiniLM-L6-v2 (384 dimensions), uses each
+Document.id as its FAISS ID, validates the ID set/count/dimensions, and writes
+the generated index atomically. It does not use the old SQLite index.
 
-### 6. `runtime.txt` (created, later superseded)
-- Originally added to pin Python 3.11 for Render
-- **Note:** Render no longer reads `runtime.txt` — the actual fix was setting the `PYTHON_VERSION=3.11.9` environment variable in Render's dashboard instead. The file is harmless to keep but isn't what's actually controlling the Python version now.
+Render's default filesystem is ephemeral. Configure a persistent disk
+mounted at /var/data and set FAISS_INDEX_PATH=/var/data/rag_index.faiss if the
+index must survive deploys/restarts. Compatible persistent disks require a
+paid service plan and this local index design is single-instance only.
+Without a disk, rebuild the index after every redeploy, restart, or
+free-service spin-down. The index is generated runtime data and must not be
+committed.
 
-### 7. `Procfile` (created)
-- Declares: `web: gunicorn moodlebot.wsgi:application --bind 0.0.0.0:$PORT`
-- Currently not the active start command (Render's dashboard Start Command overrides it — see below) — kept for documentation purposes
+Local development can use SQLite and local-only populate_sample_data.
+Production does not run sample-data seeding, fixture import, or destructive
+legacy loaders. The SQLite export/validation scripts remain optional legacy
+tools and are not part of deployment.
 
-### 8. `chat/views.py`
-- Cosmetic only: renamed misleading `"✅ Using Gemini RAG"` log message and `'source_type': 'gemini_rag'` label to accurately reflect the actual engine (Groq/OpenRouter via `rag_engine.py`, not Gemini — Gemini was never actually used)
+There is no render.yaml: the current plan is manual Dashboard setup so no
+database or service is created by applying a Blueprint. Render's default TCP
+health check is used; the project has no dedicated health endpoint.
 
-## Render dashboard configuration (not in the repo)
-
-| Setting | Value |
-|---|---|
-| Build Command | `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py populate_sample_data && python index_text_files.py && python build_index.py` |
-| Start Command | `gunicorn moodlebot.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 1` |
-| Environment Variables | `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS=moodle-bot-1zx9.onrender.com,localhost,127.0.0.1`, `GROQ_API_KEY`, `LLM_MODEL=openai/gpt-oss-20b`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL=openrouter/free`, `PYTHON_VERSION=3.11.9` |
-
-## External services added
-
-- **UptimeRobot** — pings the app every 5 minutes to prevent Render's free-tier cold-start sleep
-
-## Known non-issues (don't "fix" these)
-
-- `google-api-core`/`tensorflow-intel` dependency warnings during local pip installs — harmless, from unrelated packages in your global Python environment, not used by this project
-- Default demo credentials (`admin/admin123` etc.) are still in the public README — low risk for a portfolio project, but worth changing if you want to lock it down further
+The Render Web Service is configured separately to watch `main`; this
+repository does not create or manage Render resources. Prior AWS EC2/RDS and
+Nginx instructions are superseded and are not the current target. Check
+current Render pricing and availability before creating resources.

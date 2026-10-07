@@ -1,194 +1,228 @@
-"""
-Django management command to populate sample data for testing
-Usage: python manage.py populate_sample_data
-"""
-from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
-from django.utils import timezone
+"""Create missing demo data locally; this command refuses production settings."""
+
 from datetime import timedelta
-from core.models import UserProfile, ResponseFeedback, LearningGap, TAMSurvey
+
+from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
+from django.utils import timezone
+
 from chat.models import ChatSession, Message
+from core.models import LearningGap, ResponseFeedback, TAMSurvey, UserProfile
 from knowledge.models import Document
 
-class Command(BaseCommand):
-    help = 'Populate database with sample data for testing'
+User = get_user_model()
 
+DEMO_USERS = [
+    {
+        "username": "admin",
+        "password": "admin123",
+        "email": "admin@moodlebot.edu",
+        "first_name": "System",
+        "last_name": "Administrator",
+        "user_type": "admin",
+        "is_staff": True,
+        "is_superuser": True,
+    },
+    {
+        "username": "prof_smith",
+        "password": "teacher123",
+        "email": "prof.smith@university.edu",
+        "first_name": "Dr. John",
+        "last_name": "Smith",
+        "user_type": "teacher",
+        "is_staff": True,
+    },
+    {
+        "username": "prof_jones",
+        "password": "teacher123",
+        "email": "prof.jones@university.edu",
+        "first_name": "Dr. Sarah",
+        "last_name": "Jones",
+        "user_type": "teacher",
+        "is_staff": True,
+    },
+    {
+        "username": "alice_student",
+        "password": "student123",
+        "email": "alice@student.edu",
+        "first_name": "Alice",
+        "last_name": "Anderson",
+        "user_type": "student",
+    },
+    {
+        "username": "bob_student",
+        "password": "student123",
+        "email": "bob@student.edu",
+        "first_name": "Bob",
+        "last_name": "Brown",
+        "user_type": "student",
+    },
+    {
+        "username": "charlie_student",
+        "password": "student123",
+        "email": "charlie@student.edu",
+        "first_name": "Charlie",
+        "last_name": "Clark",
+        "user_type": "student",
+    },
+    {
+        "username": "diana_student",
+        "password": "student123",
+        "email": "diana@student.edu",
+        "first_name": "Diana",
+        "last_name": "Davis",
+        "user_type": "student",
+    },
+    {
+        "username": "eve_student",
+        "password": "student123",
+        "email": "eve@student.edu",
+        "first_name": "Eve",
+        "last_name": "Evans",
+        "user_type": "student",
+    },
+]
+
+DOCUMENTS = [
+    (
+        "Introduction to SQL",
+        "SQL basics: SELECT, INSERT, UPDATE, DELETE. Master database queries.",
+    ),
+    (
+        "Database Normalization Guide",
+        "1NF, 2NF, 3NF, BCNF - reducing redundancy through normalization.",
+    ),
+    (
+        "JOIN Operations Tutorial",
+        "INNER JOIN, LEFT JOIN, RIGHT JOIN, FULL OUTER JOIN explained.",
+    ),
+    (
+        "Indexing & Query Optimization",
+        "Learn how indexes improve query performance in databases.",
+    ),
+]
+
+SAMPLE_MESSAGES = [
+    ("user", "What is SQL?", None),
+    (
+        "bot",
+        "SQL (Structured Query Language) is used to manage relational databases.",
+        0.95,
+    ),
+    ("user", "What are JOINs?", None),
+    (
+        "bot",
+        "JOINs combine rows from multiple tables based on related columns.",
+        0.92,
+    ),
+    ("user", "What is normalization?", None),
+    (
+        "bot",
+        "Normalization reduces data redundancy by organizing data into multiple tables.",
+        0.90,
+    ),
+]
+
+
+class Command(BaseCommand):
+    help = "Create missing demo users and sample data without resetting existing records"
+
+    @transaction.atomic
     def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS('🚀 Starting data population...'))
-        
-        # Clear existing data (optional)
-        # User.objects.all().delete()
-        
-        # Create Admin User
-        admin, _ = User.objects.get_or_create(
-            username='admin',
-            defaults={
-                'email': 'admin@moodlebot.edu',
-                'is_staff': True,
-                'is_superuser': True,
-                'first_name': 'System',
-                'last_name': 'Administrator'
-            }
-        )
-        admin.set_password('admin123')
-        admin.save()
-        profile, _ = UserProfile.objects.get_or_create(user=admin, defaults={'user_type': 'admin'})
-        self.stdout.write(self.style.SUCCESS(f'✅ Admin created/updated: {admin.username}'))
-        
-        # Create Teacher Users
-        teachers_data = [
-            {'username': 'prof_smith', 'email': 'prof.smith@university.edu', 'first_name': 'Dr. John', 'last_name': 'Smith'},
-            {'username': 'prof_jones', 'email': 'prof.jones@university.edu', 'first_name': 'Dr. Sarah', 'last_name': 'Jones'},
-        ]
-        
-        for teacher_data in teachers_data:
-            teacher, _ = User.objects.get_or_create(
-                username=teacher_data['username'],
-                defaults={**teacher_data, 'is_staff': True}
+        if not settings.DEBUG:
+            raise CommandError(
+                "populate_sample_data is for local development only; it must "
+                "not be run in production."
             )
-            teacher.set_password('teacher123')
-            teacher.save()
-            profile, _ = UserProfile.objects.get_or_create(user=teacher, defaults={'user_type': 'teacher'})
-            self.stdout.write(self.style.SUCCESS(f'✅ Teacher created/updated: {teacher.username}'))
-        
-        # Create Student Users
-        students_data = [
-            {'username': 'alice_student', 'email': 'alice@student.edu', 'first_name': 'Alice', 'last_name': 'Anderson'},
-            {'username': 'bob_student', 'email': 'bob@student.edu', 'first_name': 'Bob', 'last_name': 'Brown'},
-            {'username': 'charlie_student', 'email': 'charlie@student.edu', 'first_name': 'Charlie', 'last_name': 'Clark'},
-            {'username': 'diana_student', 'email': 'diana@student.edu', 'first_name': 'Diana', 'last_name': 'Davis'},
-            {'username': 'eve_student', 'email': 'eve@student.edu', 'first_name': 'Eve', 'last_name': 'Evans'},
-        ]
-        
-        students = []
-        for student_data in students_data:
-            student, _ = User.objects.get_or_create(
-                username=student_data['username'],
-                defaults=student_data
+
+        users_by_username = {}
+        for user_data in DEMO_USERS:
+            values = user_data.copy()
+            password = values.pop("password")
+            user_type = values.pop("user_type")
+            user = User.objects.filter(username=values["username"]).first()
+            if user is None:
+                user = User.objects.create_user(password=password, **values)
+                UserProfile.objects.create(user=user, user_type=user_type)
+                self.stdout.write(f"Created demo account {user.username}.")
+            else:
+                self.stdout.write(f"Preserved existing account {user.username}.")
+            users_by_username[user.username] = user
+
+        students = [
+            users_by_username[username]
+            for username in (
+                "alice_student",
+                "bob_student",
+                "charlie_student",
+                "diana_student",
+                "eve_student",
             )
-            student.set_password('student123')
-            student.save()
-            profile, _ = UserProfile.objects.get_or_create(user=student, defaults={'user_type': 'student'})
-            students.append(student)
-            self.stdout.write(self.style.SUCCESS(f'✅ Student created/updated: {student.username}'))
-        
-        # Create sample chat sessions and messages
+            if username in users_by_username
+        ]
+        sample_sessions = []
         for student in students[:3]:
-            session = ChatSession.objects.create(
+            title = f"Database Learning - {student.first_name}"
+            session, created = ChatSession.objects.get_or_create(
                 user=student,
-                title=f"Database Learning - {student.first_name}",
+                title=title,
             )
-            
-            # Create sample messages
-            questions = [
-                ("What is SQL?", "SQL (Structured Query Language) is used to manage relational databases.", 0.95),
-                ("What are JOINs?", "JOINs combine rows from multiple tables based on related columns.", 0.92),
-                ("What is normalization?", "Normalization reduces data redundancy by organizing data into multiple tables.", 0.90),
-            ]
-            
-            for i, (q, a, conf) in enumerate(questions):
+            if not created:
+                continue
+            sample_sessions.append(session)
+            for index, (message_type, content, confidence) in enumerate(SAMPLE_MESSAGES):
                 Message.objects.create(
                     session=session,
-                    message_type='user',
-                    content=q,
-                    created_at=timezone.now() - timedelta(days=i)
+                    message_type=message_type,
+                    content=content,
+                    confidence_score=confidence,
+                    created_at=timezone.now() - timedelta(days=index // 2),
                 )
-                Message.objects.create(
-                    session=session,
-                    message_type='bot',
-                    content=a,
-                    confidence_score=conf,
-                    created_at=timezone.now() - timedelta(days=i, hours=1)
-                )
-        
-        self.stdout.write(self.style.SUCCESS('✅ Chat sessions and messages created'))
-        
-        # Create sample documents
-        documents_data = [
-            {
-                'title': 'Introduction to SQL',
-                'content': 'SQL basics: SELECT, INSERT, UPDATE, DELETE. Master database queries.',
-                'course_id': 1
-            },
-            {
-                'title': 'Database Normalization Guide',
-                'content': '1NF, 2NF, 3NF, BCNF - reducing redundancy through normalization.',
-                'course_id': 1
-            },
-            {
-                'title': 'JOIN Operations Tutorial',
-                'content': 'INNER JOIN, LEFT JOIN, RIGHT JOIN, FULL OUTER JOIN explained.',
-                'course_id': 1
-            },
-            {
-                'title': 'Indexing & Query Optimization',
-                'content': 'Learn how indexes improve query performance in databases.',
-                'course_id': 1
-            },
-        ]
-        
-        for doc_data in documents_data:
-            Document.objects.create(**doc_data)
-        
-        self.stdout.write(self.style.SUCCESS('✅ Sample documents created'))
-        
-        # Create sample feedback
-        for student in students[:2]:
-            messages = Message.objects.filter(session__user=student, message_type='bot')[:2]
-            for msg in messages:
+
+        for title, content in DOCUMENTS:
+            Document.objects.get_or_create(
+                title=title,
+                content=content,
+                course_id=1,
+            )
+
+        for session in sample_sessions[:2]:
+            bot_messages = Message.objects.filter(
+                session=session,
+                message_type="bot",
+                content__in=[message[1] for message in SAMPLE_MESSAGES if message[0] == "bot"],
+            )
+            for message in bot_messages:
                 ResponseFeedback.objects.get_or_create(
-                    message=msg,
-                    user=student,
-                    defaults={'rating': 5, 'comment': 'Very helpful explanation!'}
+                    message=message,
+                    user=session.user,
+                    defaults={"rating": 5, "comment": "Very helpful explanation!"},
                 )
-        
-        self.stdout.write(self.style.SUCCESS('✅ Sample feedback created'))
-        
-        # Create sample learning gaps
+
         for student in students:
-            LearningGap.objects.get_or_create(
-                user=student,
-                topic='sql',
-                defaults={'incorrect_attempts': 2, 'suggested_resources': 'SQL Tutorial Videos'}
-            )
-            LearningGap.objects.get_or_create(
-                user=student,
-                topic='normalization',
-                defaults={'incorrect_attempts': 3, 'suggested_resources': 'Normalization Examples & Exercises'}
-            )
-        
-        self.stdout.write(self.style.SUCCESS('✅ Sample learning gaps created'))
-        
-        # Create sample TAM surveys
+            for topic, attempts, resources in (
+                ("sql", 2, "SQL Tutorial Videos"),
+                ("normalization", 3, "Normalization Examples & Exercises"),
+            ):
+                LearningGap.objects.get_or_create(
+                    user=student,
+                    topic=topic,
+                    defaults={
+                        "incorrect_attempts": attempts,
+                        "suggested_resources": resources,
+                    },
+                )
+
         for student in students[:3]:
-            TAMSurvey.objects.create(
+            TAMSurvey.objects.get_or_create(
                 user=student,
-                pu_score=5,  # Perceived Usefulness
-                eou_score=4,  # Ease of Use
-                attitude_score=5,  # Attitude toward Using
-                intention_score=4,  # Behavioral Intention
-                feedback='MoodleBot is very useful for learning database concepts!'
+                pu_score=5,
+                eou_score=4,
+                attitude_score=5,
+                intention_score=4,
+                feedback="MoodleBot is very useful for learning database concepts!",
             )
-        
-        self.stdout.write(self.style.SUCCESS('✅ Sample TAM surveys created'))
-        
-        # Print summary
-        self.stdout.write(self.style.SUCCESS('\n' + '='*60))
-        self.stdout.write(self.style.SUCCESS('📊 DATA POPULATION SUMMARY'))
-        self.stdout.write(self.style.SUCCESS('='*60))
-        self.stdout.write(self.style.SUCCESS(f'✅ Admins: {User.objects.filter(profile__user_type="admin").count()}'))
-        self.stdout.write(self.style.SUCCESS(f'✅ Teachers: {User.objects.filter(profile__user_type="teacher").count()}'))
-        self.stdout.write(self.style.SUCCESS(f'✅ Students: {User.objects.filter(profile__user_type="student").count()}'))
-        self.stdout.write(self.style.SUCCESS(f'✅ Chat Sessions: {ChatSession.objects.count()}'))
-        self.stdout.write(self.style.SUCCESS(f'✅ Messages: {Message.objects.count()}'))
-        self.stdout.write(self.style.SUCCESS(f'✅ Documents: {Document.objects.count()}'))
-        self.stdout.write(self.style.SUCCESS(f'✅ Feedback Entries: {ResponseFeedback.objects.count()}'))
-        self.stdout.write(self.style.SUCCESS(f'✅ Learning Gaps: {LearningGap.objects.count()}'))
-        self.stdout.write(self.style.SUCCESS(f'✅ TAM Surveys: {TAMSurvey.objects.count()}'))
-        self.stdout.write(self.style.SUCCESS('='*60))
-        
-        self.stdout.write(self.style.SUCCESS('\n🎉 Sample data population complete!'))
-        self.stdout.write(self.style.WARNING('\n🔑 DEFAULT CREDENTIALS:'))
-        self.stdout.write('   Admin: admin / admin123')
-        self.stdout.write('   Teacher: prof_smith / teacher123')
-        self.stdout.write('   Student: alice_student / student123')
+
+        self.stdout.write(self.style.SUCCESS("Sample data is ready; existing records were preserved."))

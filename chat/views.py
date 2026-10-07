@@ -271,7 +271,6 @@ def send_message(request):
             result = rag_engine.generate_response(
                 query,
                 docs,
-                scores,
                 conversation_history=conversation_history
             )
 
@@ -617,8 +616,7 @@ def rag_chat_api(request):
 
         result = rag_engine.generate_response(
             query,
-            docs,
-            scores
+            docs
         )
 
         return JsonResponse(

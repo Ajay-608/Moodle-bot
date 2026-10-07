@@ -12,64 +12,36 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 import os
 from pathlib import Path
+import dj_database_url
 from dotenv import load_dotenv
 
-# Load environment variables (.env locally, real environment variables on Render)
+# Load local development variables from .env when present.
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# ============================================================
-# SECURITY SETTINGS
-# ============================================================
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-
+# --- Security settings (driven by environment variables) ---
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY environment variable is not set")
+    if DEBUG:
+        SECRET_KEY = 'dev-secret-key-for-local-development-only'
+    else:
+        raise RuntimeError("SECRET_KEY must be set in the environment when DEBUG=False")
 
-DEBUG = os.getenv("DEBUG", "False") == "True"
-
-# Supports both local development and Render deployment.
-# On Render, set:
-# ALLOWED_HOSTS=moodle-bot-1zx9.onrender.com
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.getenv(
-        "ALLOWED_HOSTS",
-        "localhost,127.0.0.1"
-    ).split(",")
+    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
     if host.strip()
 ]
-
-
-# ============================================================
-# CSRF / HTTPS SETTINGS
-# ============================================================
-
-# Required for Django POST requests coming from the deployed
-# HTTPS Render domain.
 CSRF_TRUSTED_ORIGINS = [
-    "https://moodle-bot-1zx9.onrender.com",
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
 ]
 
-# Render runs Django behind a proxy. This tells Django that the
-# original client request used HTTPS.
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-
-# Secure cookies only when running in production/HTTPS.
-# Keep these disabled locally when using http://127.0.0.1:8000.
-if not DEBUG:
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-
-
-# ============================================================
-# APPLICATIONS
-# ============================================================
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -78,10 +50,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'rest_framework',
     'corsheaders',
-
     'core',
     'chat',
     'rag',
@@ -92,34 +62,20 @@ INSTALLED_APPS = [
     'api',
 ]
 
-
-# ============================================================
-# MIDDLEWARE
-# ============================================================
-
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # serves static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-
-    'core.rate_limit_middleware.ChatRateLimitMiddleware',
-
+    'core.rate_limit_middleware.ChatRateLimitMiddleware',  # protects Groq/OpenRouter quota
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-
 ROOT_URLCONF = 'moodlebot.urls'
-
-
-# ============================================================
-# TEMPLATES
-# ============================================================
 
 TEMPLATES = [
     {
@@ -137,37 +93,29 @@ TEMPLATES = [
     },
 ]
 
-
 WSGI_APPLICATION = 'moodlebot.wsgi.application'
 
-
-# ============================================================
-# DATABASE
-# ============================================================
-
-# SQLite is currently used for this portfolio/demo deployment.
-#
-# IMPORTANT:
-# Render's free filesystem is not intended to provide reliable
-# persistent SQLite storage. Users, sessions, conversations,
-# and other database records may be lost if the service is
-# recreated or the filesystem is reset.
-#
-# PostgreSQL can be introduced later for persistent production
-# storage without changing the application's overall Django
-# authentication/session architecture.
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
     }
-}
+else:
+    if not DEBUG:
+        raise RuntimeError("DATABASE_URL must be set when DEBUG=False")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
-
-# ============================================================
-# PASSWORD VALIDATION
-# ============================================================
+if not DEBUG and DATABASES['default']['ENGINE'] != 'django.db.backends.postgresql':
+    raise RuntimeError("DATABASE_URL must configure PostgreSQL when DEBUG=False")
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -184,126 +132,59 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# ============================================================
-# INTERNATIONALIZATION
-# ============================================================
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# ============================================================
-# STATIC FILES
-# ============================================================
-
+# --- Static & media files ---
 STATIC_URL = '/static/'
-
-STATICFILES_DIRS = [
-    BASE_DIR / 'static'
-]
-
+STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-STATICFILES_STORAGE = (
-    'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+FAISS_INDEX_PATH = Path(
+    os.getenv('FAISS_INDEX_PATH') or BASE_DIR / 'rag_index.faiss'
 )
 
-
-# ============================================================
-# MEDIA FILES
-# ============================================================
-
 MEDIA_URL = '/media/'
-
 MEDIA_ROOT = BASE_DIR / 'media'
 
-
-# ============================================================
-# FILE UPLOAD SETTINGS
-# ============================================================
-
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
-
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
-
-
-# ============================================================
-# DEFAULT PRIMARY KEY
-# ============================================================
+# File upload settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# ============================================================
-# DJANGO REST FRAMEWORK
-# ============================================================
-
+# --- REST Framework ---
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
     ],
-
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-    ],
+    ]
 }
 
-
-# ============================================================
-# LOGIN / LOGOUT SETTINGS
-# ============================================================
-
+# --- Login settings ---
 LOGIN_URL = '/login/'
-
 LOGIN_REDIRECT_URL = '/'
-
 LOGOUT_REDIRECT_URL = '/login/'
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
-# ============================================================
-# CORS
-# ============================================================
-
-# Add the Render domain if your frontend/API requests require
-# cross-origin access.
-#
-# The Django templates themselves do not normally require CORS.
-# Keep this empty unless a separate frontend needs it.
 CORS_ALLOWED_ORIGINS = [
-    "https://moodle-bot-1zx9.onrender.com",
+    origin.strip()
+    for origin in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+    if origin.strip()
 ]
 
-
-# ============================================================
-# AI API KEYS
-# ============================================================
-
-# The actual API keys are NOT stored in this file.
-#
-# rag_engine.py reads:
-#
-# GROQ_API_KEY
-# OPENROUTER_API_KEY
-#
-# Configure them through Render Environment Variables and
-# through a local .env file during development.
-
-
-# ============================================================
-# CELERY / REDIS / OPENAI
-# ============================================================
-
-# These settings are intentionally not configured because the
-# current MoodleBot implementation does not use:
-#
-# - Celery
-# - Redis
-# - OpenAI SDK
-#
-# rag_engine.py communicates with Groq/OpenRouter directly.
+# NOTE: The old CELERY_BROKER_URL / CELERY_RESULT_BACKEND / OPENAI_API_KEY
+# settings were removed here — MoodleBot's rag_engine.py doesn't use Celery,
+# Redis, or the OpenAI SDK (it calls Groq/OpenRouter directly via `requests`
+# using GROQ_API_KEY / OPENROUTER_API_KEY from the environment). Removing
+# them avoids needing packages you don't actually use. If you add Celery
+# back later, reintroduce those two lines and add `celery` + `redis` to
+# requirements.txt.
